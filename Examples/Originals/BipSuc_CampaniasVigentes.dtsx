@@ -1,0 +1,736 @@
+﻿<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:refId="Package"
+  DTS:CreationDate="8/12/2026 3:33:10 PM"
+  DTS:CreationName="Microsoft.Package"
+  DTS:CreatorComputerName="1187PC266"
+  DTS:CreatorName="CCBA\P075986"
+  DTS:DTSID="{03C7554A-0D65-44DD-9BEF-4D37D0AF5CB8}"
+  DTS:ExecutableType="Microsoft.Package"
+  DTS:LastModifiedProductVersion="17.0.1010.2"
+  DTS:LocaleID="11274"
+  DTS:ObjectName="Package1"
+  DTS:PackageType="5"
+  DTS:ProtectionLevel="2"
+  DTS:VersionBuild="16"
+  DTS:VersionGUID="{22D1D9E1-3953-4165-A265-B7AFBF6EED33}">
+  <DTS:Property
+    DTS:Name="PackageFormatVersion">8</DTS:Property>
+  <DTS:Variables />
+  <DTS:Executables>
+    <DTS:Executable
+      DTS:refId="Package\Tarea Flujo de datos"
+      DTS:CreationName="Microsoft.Pipeline"
+      DTS:Description="Tarea Flujo de datos"
+      DTS:DTSID="{EBC1ABDC-774E-4663-B6F3-7563EC1CDCD9}"
+      DTS:ExecutableType="Microsoft.Pipeline"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Tarea Flujo de datos"
+      DTS:TaskContact="Performs high-performance data extraction, transformation and loading;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <pipeline
+          version="1">
+          <components>
+            <component
+              refId="Package\Tarea Flujo de datos\Conversión de datos"
+              componentClassID="Microsoft.DataConvert"
+              contactInfo="Conversión de datos;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; Todos los derechos reservados; http://www.microsoft.com/sql/support;0"
+              description="Conversión de datos"
+              name="Conversión de datos"
+              usesDispositions="true">
+              <inputs>
+                <input
+                  refId="Package\Tarea Flujo de datos\Conversión de datos.Inputs[Entrada de conversión de datos]"
+                  name="Entrada de conversión de datos">
+                  <inputColumns>
+                    <inputColumn
+                      refId="Package\Tarea Flujo de datos\Conversión de datos.Inputs[Entrada de conversión de datos].Columns[FEC_INICIO_TXT]"
+                      cachedCodepage="1252"
+                      cachedDataType="str"
+                      cachedLength="10"
+                      cachedName="FEC_INICIO_TXT"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_INICIO_TXT]" />
+                    <inputColumn
+                      refId="Package\Tarea Flujo de datos\Conversión de datos.Inputs[Entrada de conversión de datos].Columns[FEC_FIN_TXT]"
+                      cachedCodepage="1252"
+                      cachedDataType="str"
+                      cachedLength="10"
+                      cachedName="FEC_FIN_TXT"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_FIN_TXT]" />
+                  </inputColumns>
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output
+                  refId="Package\Tarea Flujo de datos\Conversión de datos.Outputs[Salida de conversión de datos]"
+                  exclusionGroup="1"
+                  name="Salida de conversión de datos"
+                  synchronousInputId="Package\Tarea Flujo de datos\Conversión de datos.Inputs[Entrada de conversión de datos]">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\Tarea Flujo de datos\Conversión de datos.Outputs[Salida de conversión de datos].Columns[FechaInicio_SAL]"
+                      dataType="dbDate"
+                      errorOrTruncationOperation="Conversión"
+                      errorRowDisposition="FailComponent"
+                      lineageId="Package\Tarea Flujo de datos\Conversión de datos.Outputs[Salida de conversión de datos].Columns[FechaInicio_SAL]"
+                      name="FechaInicio_SAL"
+                      truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property
+                          containsID="true"
+                          dataType="System.Int32"
+                          description="Especifica la columna de entrada usada como origen de datos para la conversión."
+                          name="SourceInputColumnLineageID">#{Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_INICIO_TXT]}</property>
+                        <property
+                          dataType="System.Boolean"
+                          description="Indica si la columna usa las rutinas de análisis más rápidas independientes de la configuración regional."
+                          name="FastParse">false</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn
+                      refId="Package\Tarea Flujo de datos\Conversión de datos.Outputs[Salida de conversión de datos].Columns[FechaFin_SAL]"
+                      dataType="dbDate"
+                      errorOrTruncationOperation="Conversión"
+                      errorRowDisposition="FailComponent"
+                      lineageId="Package\Tarea Flujo de datos\Conversión de datos.Outputs[Salida de conversión de datos].Columns[FechaFin_SAL]"
+                      name="FechaFin_SAL"
+                      truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property
+                          containsID="true"
+                          dataType="System.Int32"
+                          description="Especifica la columna de entrada usada como origen de datos para la conversión."
+                          name="SourceInputColumnLineageID">#{Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_FIN_TXT]}</property>
+                        <property
+                          dataType="System.Boolean"
+                          description="Indica si la columna usa las rutinas de análisis más rápidas independientes de la configuración regional."
+                          name="FastParse">false</property>
+                      </properties>
+                    </outputColumn>
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+                <output
+                  refId="Package\Tarea Flujo de datos\Conversión de datos.Outputs[Salida de error de conversión de datos]"
+                  exclusionGroup="1"
+                  isErrorOut="true"
+                  name="Salida de error de conversión de datos"
+                  synchronousInputId="Package\Tarea Flujo de datos\Conversión de datos.Inputs[Entrada de conversión de datos]">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\Tarea Flujo de datos\Conversión de datos.Outputs[Salida de error de conversión de datos].Columns[ErrorCode]"
+                      dataType="i4"
+                      lineageId="Package\Tarea Flujo de datos\Conversión de datos.Outputs[Salida de error de conversión de datos].Columns[ErrorCode]"
+                      name="ErrorCode"
+                      specialFlags="1" />
+                    <outputColumn
+                      refId="Package\Tarea Flujo de datos\Conversión de datos.Outputs[Salida de error de conversión de datos].Columns[ErrorColumn]"
+                      dataType="i4"
+                      lineageId="Package\Tarea Flujo de datos\Conversión de datos.Outputs[Salida de error de conversión de datos].Columns[ErrorColumn]"
+                      name="ErrorColumn"
+                      specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component
+              refId="Package\Tarea Flujo de datos\Destino de OLE DB"
+              componentClassID="Microsoft.OLEDBDestination"
+              contactInfo="Destino de OLE DB;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; Todos los derechos reservados; http://www.microsoft.com/sql/support;4"
+              description="Destino de OLE DB"
+              name="Destino de OLE DB"
+              usesDispositions="true"
+              version="4">
+              <properties>
+                <property
+                  dataType="System.Int32"
+                  description="Número de segundos antes de que se agote el tiempo de espera de un comando. Un valor de 0 indica un tiempo de espera infinito."
+                  name="CommandTimeout">0</property>
+                <property
+                  dataType="System.String"
+                  description="Especifica el nombre del objeto de base de datos usado para abrir un conjunto de filas."
+                  name="OpenRowset">[dbo].[TiposCampanias]</property>
+                <property
+                  dataType="System.String"
+                  description="Especifica la variable que contiene el nombre del objeto de base de datos usado para abrir un conjunto de filas."
+                  name="OpenRowsetVariable"></property>
+                <property
+                  dataType="System.String"
+                  description="Comando SQL para ejecutar."
+                  name="SqlCommand"
+                  UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor"></property>
+                <property
+                  dataType="System.Int32"
+                  description="Especifica la página de códigos de columna para utilizar cuando la información de página de códigos no está disponible en el origen de datos."
+                  name="DefaultCodePage">1252</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Fuerza el uso del valor de la propiedad DefaultCodePage al describir datos de caracteres."
+                  name="AlwaysUseDefaultCodePage">false</property>
+                <property
+                  dataType="System.Int32"
+                  description="Especifica el modo utilizado para obtener acceso a la base de datos."
+                  name="AccessMode"
+                  typeConverter="AccessMode">0</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Indica si los valores proporcionados para columnas de identidad se van a copiar al destino. Si es False, los valores de las columnas de identidad se generan automáticamente en el destino. Solo se aplica si está activada la carga rápida."
+                  name="FastLoadKeepIdentity">false</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Indica si las columnas que contienen NULL tendrán NULL insertado en el destino. Si es False, las columnas que contienen NULL tendrán sus valores predeterminados insertados en el destino. Solo se aplica si está activada la carga rápida."
+                  name="FastLoadKeepNulls">false</property>
+                <property
+                  dataType="System.String"
+                  description="Especifica opciones para usar con la carga rápida. Solo se aplica si está activada la carga rápida."
+                  name="FastLoadOptions">TABLOCK,CHECK_CONSTRAINTS</property>
+                <property
+                  dataType="System.Int32"
+                  description="Especifica cuándo se emiten confirmaciones durante la inserción de datos. El valor 0 especifica que se emitirá una confirmación al final de la inserción de datos. Solo se aplica si está activada la carga rápida."
+                  name="FastLoadMaxInsertCommitSize">2147483647</property>
+              </properties>
+              <connections>
+                <connection
+                  refId="Package\Tarea Flujo de datos\Destino de OLE DB.Connections[OleDbConnection]"
+                  connectionManagerID="{5DA5808C-8489-48AC-8614-CB034DE02B61}:external"
+                  connectionManagerRefId="Project.ConnectionManagers[cnxSrvBsLogSBD01]"
+                  description="La conexión de tiempo de ejecución OLE DB usada para obtener acceso a la base de datos."
+                  name="OleDbConnection" />
+              </connections>
+              <inputs>
+                <input
+                  refId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB]"
+                  errorOrTruncationOperation="Insertar"
+                  errorRowDisposition="FailComponent"
+                  hasSideEffects="true"
+                  name="Entrada de destino de OLE DB">
+                  <inputColumns>
+                    <inputColumn
+                      refId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].Columns[COD_CAMPANIA_DIRIGIDA]"
+                      cachedDataType="i4"
+                      cachedName="COD_CAMPANIA_DIRIGIDA"
+                      externalMetadataColumnId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[CodigoCampania]"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[COD_CAMPANIA_DIRIGIDA]" />
+                    <inputColumn
+                      refId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].Columns[COD_ACCION_DIRIGIDA]"
+                      cachedDataType="i4"
+                      cachedName="COD_ACCION_DIRIGIDA"
+                      externalMetadataColumnId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[CodigoAccion]"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[COD_ACCION_DIRIGIDA]" />
+                    <inputColumn
+                      refId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].Columns[DESC_SPEECH_VENTA]"
+                      cachedDataType="wstr"
+                      cachedLength="1000"
+                      cachedName="DESC_SPEECH_VENTA"
+                      externalMetadataColumnId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[Speech]"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[DESC_SPEECH_VENTA]" />
+                    <inputColumn
+                      refId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].Columns[publico_objetivo]"
+                      cachedDataType="wstr"
+                      cachedLength="1000"
+                      cachedName="publico_objetivo"
+                      externalMetadataColumnId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[PublicoObjetivo]"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[publico_objetivo]" />
+                    <inputColumn
+                      refId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].Columns[FechaInicio_SAL]"
+                      cachedDataType="dbDate"
+                      cachedName="FechaInicio_SAL"
+                      externalMetadataColumnId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[FechaInicio]"
+                      lineageId="Package\Tarea Flujo de datos\Conversión de datos.Outputs[Salida de conversión de datos].Columns[FechaInicio_SAL]" />
+                    <inputColumn
+                      refId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].Columns[FechaFin_SAL]"
+                      cachedDataType="dbDate"
+                      cachedName="FechaFin_SAL"
+                      externalMetadataColumnId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[FechaFin]"
+                      lineageId="Package\Tarea Flujo de datos\Conversión de datos.Outputs[Salida de conversión de datos].Columns[FechaFin_SAL]" />
+                    <inputColumn
+                      refId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].Columns[DESC_CAMPANIA_DIRIGIDA]"
+                      cachedDataType="wstr"
+                      cachedLength="200"
+                      cachedName="DESC_CAMPANIA_DIRIGIDA"
+                      externalMetadataColumnId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[Descripcion]"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[DESC_CAMPANIA_DIRIGIDA]" />
+                  </inputColumns>
+                  <externalMetadataColumns
+                    isUsed="True">
+                    <externalMetadataColumn
+                      refId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[CodigoCampania]"
+                      dataType="i4"
+                      name="CodigoCampania" />
+                    <externalMetadataColumn
+                      refId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[CodigoAccion]"
+                      dataType="i4"
+                      name="CodigoAccion" />
+                    <externalMetadataColumn
+                      refId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[FechaInicio]"
+                      dataType="wstr"
+                      length="27"
+                      name="FechaInicio" />
+                    <externalMetadataColumn
+                      refId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[FechaFin]"
+                      dataType="wstr"
+                      length="27"
+                      name="FechaFin" />
+                    <externalMetadataColumn
+                      refId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[Speech]"
+                      dataType="wstr"
+                      length="1000"
+                      name="Speech" />
+                    <externalMetadataColumn
+                      refId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[Descripcion]"
+                      dataType="wstr"
+                      length="1000"
+                      name="Descripcion" />
+                    <externalMetadataColumn
+                      refId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[PublicoObjetivo]"
+                      dataType="wstr"
+                      length="1000"
+                      name="PublicoObjetivo" />
+                  </externalMetadataColumns>
+                </input>
+              </inputs>
+              <outputs>
+                <output
+                  refId="Package\Tarea Flujo de datos\Destino de OLE DB.Outputs[Salida de error de destino de OLE DB]"
+                  exclusionGroup="1"
+                  isErrorOut="true"
+                  name="Salida de error de destino de OLE DB"
+                  synchronousInputId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB]">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\Tarea Flujo de datos\Destino de OLE DB.Outputs[Salida de error de destino de OLE DB].Columns[ErrorCode]"
+                      dataType="i4"
+                      lineageId="Package\Tarea Flujo de datos\Destino de OLE DB.Outputs[Salida de error de destino de OLE DB].Columns[ErrorCode]"
+                      name="ErrorCode"
+                      specialFlags="1" />
+                    <outputColumn
+                      refId="Package\Tarea Flujo de datos\Destino de OLE DB.Outputs[Salida de error de destino de OLE DB].Columns[ErrorColumn]"
+                      dataType="i4"
+                      lineageId="Package\Tarea Flujo de datos\Destino de OLE DB.Outputs[Salida de error de destino de OLE DB].Columns[ErrorColumn]"
+                      name="ErrorColumn"
+                      specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component
+              refId="Package\Tarea Flujo de datos\Teradata Source"
+              componentClassID="Microsoft.SSISTeradataSrc"
+              contactInfo="Teradata Source;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; Todos los derechos reservados; http://www.microsoft.com/sql/support;1"
+              description="Teradata Source"
+              name="Teradata Source"
+              usesDispositions="true"
+              version="1">
+              <properties>
+                <property
+                  dataType="System.String"
+                  description="The name of the table to be fetched."
+                  expressionType="Notify"
+                  name="TableName"></property>
+                <property
+                  dataType="System.String"
+                  description="The SQL command to be executed."
+                  expressionType="Notify"
+                  name="SqlCommand"
+                  UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor, Microsoft.DataTransformationServices.Controls, Version=17.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91">SELECT
+    COD_CAMPANIA_DIRIGIDA,
+    DESC_CAMPANIA_DIRIGIDA,
+    COD_ACCION_DIRIGIDA,
+    CAST(CAST(FEC_INICIO AS DATE FORMAT 'YYYY-MM-DD') AS CHAR(10)) AS FEC_INICIO_TXT,
+	CAST(CAST(FEC_FIN AS DATE FORMAT 'YYYY-MM-DD') AS CHAR(10)) AS FEC_FIN_TXT,
+    PUBLICO_OBJETIVO,
+    DESC_SPEECH_VENTA
+FROM D_CAMPANIAS_VIGENTES_RED</property>
+                <property
+                  dataType="System.Int32"
+                  description="Data transfer block size."
+                  expressionType="Notify"
+                  name="BlockSize">1048576</property>
+                <property
+                  dataType="System.Int32"
+                  description="Maximum size of a data buffer when 'Buffer mode' is applied. Value must be large enough to hold at least one data row (including 8 overhead bytes per row at most)."
+                  expressionType="Notify"
+                  name="BufferMaxSize">16775552</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Indicates which type of Load method is used. True stands for 'Progress Buffered Rows'. False indicates 'Progress Row By Row'."
+                  expressionType="Notify"
+                  name="BufferMode">true</property>
+                <property
+                  dataType="System.Boolean"
+                  description="SQL requests and responses data encryption."
+                  expressionType="Notify"
+                  name="DataEncryption">false</property>
+                <property
+                  dataType="System.Int32"
+                  description="The code page to use when code page information is unavailable from the data source."
+                  expressionType="Notify"
+                  name="DefaultCodePage">1252</property>
+                <property
+                  dataType="System.String"
+                  description="A trace file name. Setting a value for this property enables TPT detailed tracing."
+                  expressionType="Notify"
+                  name="DetailedTracingFile"></property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the types of diagnostic messages written by each instance of the dirver to an external log file. The diagnostic trace function provides more detailed information (including the version number) in the log file to aid in problem tracking and diagnosis."
+                  name="DetailedTracingLevel"
+                  typeConverter="DetailedTracingLevel">1</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Whether or not to discard large rows."
+                  expressionType="Notify"
+                  name="DiscardLargeRow">false</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Use maximal character buffers allocation factor. Used when 'Export Width Table ID' = 'Maximum Defaults'."
+                  expressionType="Notify"
+                  name="ExtendedStringColumnsAllocation">false</property>
+                <property
+                  dataType="System.Int32"
+                  description="Maximum row size (kb) it can support in export. Valid values are: 64, 1024."
+                  name="JobMaxRowSize"
+                  typeConverter="JobMaxRowSize">64</property>
+                <property
+                  dataType="System.Int32"
+                  description="Maximum number of sessions to log on."
+                  expressionType="Notify"
+                  name="MaxSessions">8</property>
+                <property
+                  dataType="System.Int32"
+                  description="Minimum number of sessions required."
+                  expressionType="Notify"
+                  name="MinSessions">4</property>
+                <property
+                  dataType="System.String"
+                  description="A user-defined query band expression."
+                  expressionType="Notify"
+                  name="QueryBandSessionInfo"></property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies whether to use spool or not while running the current Export job."
+                  name="SpoolMode"
+                  typeConverter="SpoolMode">0</property>
+                <property
+                  dataType="System.Int32"
+                  description="The number of hours to continue trying to log on when the maximum number of load jobs is already running on the Teradata Database."
+                  expressionType="Notify"
+                  name="TenacityHours">4</property>
+                <property
+                  dataType="System.Int32"
+                  description="The number of minutes to pause before retrying to log on when the maximum number of load jobs is already running on the Teradata Database."
+                  expressionType="Notify"
+                  name="TenacitySleep">6</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Whether to allow Pass Through Characters (PTCs) to be exported from Teradata."
+                  expressionType="Notify"
+                  name="UnicodePassThrough">false</property>
+                <property
+                  dataType="System.Int32"
+                  description="The mode used to access the database."
+                  name="AccessMode"
+                  typeConverter="AccessMode">1</property>
+              </properties>
+              <connections>
+                <connection
+                  refId="Package\Tarea Flujo de datos\Teradata Source.Connections[TeradataConnection]"
+                  connectionManagerID="{29B4FDD4-193E-4D63-AC90-5C5CDA50E051}:external"
+                  connectionManagerRefId="Project.ConnectionManagers[cnxTeradata]"
+                  description="The Teradata runtime connection used to access the database."
+                  name="TeradataConnection" />
+              </connections>
+              <outputs>
+                <output
+                  refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output]"
+                  errorRowDisposition="FailComponent"
+                  name="Teradata Source Output"
+                  truncationRowDisposition="FailComponent">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[COD_CAMPANIA_DIRIGIDA]"
+                      dataType="i4"
+                      externalMetadataColumnId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[COD_CAMPANIA_DIRIGIDA]"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[COD_CAMPANIA_DIRIGIDA]"
+                      name="COD_CAMPANIA_DIRIGIDA" />
+                    <outputColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[DESC_CAMPANIA_DIRIGIDA]"
+                      dataType="wstr"
+                      externalMetadataColumnId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[DESC_CAMPANIA_DIRIGIDA]"
+                      length="200"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[DESC_CAMPANIA_DIRIGIDA]"
+                      name="DESC_CAMPANIA_DIRIGIDA" />
+                    <outputColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[COD_ACCION_DIRIGIDA]"
+                      dataType="i4"
+                      externalMetadataColumnId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[COD_ACCION_DIRIGIDA]"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[COD_ACCION_DIRIGIDA]"
+                      name="COD_ACCION_DIRIGIDA" />
+                    <outputColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_INICIO_TXT]"
+                      codePage="1252"
+                      dataType="str"
+                      externalMetadataColumnId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[FEC_INICIO_TXT]"
+                      length="10"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_INICIO_TXT]"
+                      name="FEC_INICIO_TXT" />
+                    <outputColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_FIN_TXT]"
+                      codePage="1252"
+                      dataType="str"
+                      externalMetadataColumnId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[FEC_FIN_TXT]"
+                      length="10"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_FIN_TXT]"
+                      name="FEC_FIN_TXT" />
+                    <outputColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[publico_objetivo]"
+                      dataType="wstr"
+                      externalMetadataColumnId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[publico_objetivo]"
+                      length="1000"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[publico_objetivo]"
+                      name="publico_objetivo" />
+                    <outputColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[DESC_SPEECH_VENTA]"
+                      dataType="wstr"
+                      externalMetadataColumnId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[DESC_SPEECH_VENTA]"
+                      length="1000"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[DESC_SPEECH_VENTA]"
+                      name="DESC_SPEECH_VENTA" />
+                  </outputColumns>
+                  <externalMetadataColumns
+                    isUsed="True">
+                    <externalMetadataColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[COD_CAMPANIA_DIRIGIDA]"
+                      dataType="i4"
+                      name="COD_CAMPANIA_DIRIGIDA" />
+                    <externalMetadataColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[DESC_CAMPANIA_DIRIGIDA]"
+                      dataType="wstr"
+                      length="200"
+                      name="DESC_CAMPANIA_DIRIGIDA" />
+                    <externalMetadataColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[COD_ACCION_DIRIGIDA]"
+                      dataType="i4"
+                      name="COD_ACCION_DIRIGIDA" />
+                    <externalMetadataColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[FEC_INICIO_TXT]"
+                      codePage="1252"
+                      dataType="str"
+                      length="10"
+                      name="FEC_INICIO_TXT" />
+                    <externalMetadataColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[FEC_FIN_TXT]"
+                      codePage="1252"
+                      dataType="str"
+                      length="10"
+                      name="FEC_FIN_TXT" />
+                    <externalMetadataColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[publico_objetivo]"
+                      dataType="wstr"
+                      length="1000"
+                      name="publico_objetivo" />
+                    <externalMetadataColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[DESC_SPEECH_VENTA]"
+                      dataType="wstr"
+                      length="1000"
+                      name="DESC_SPEECH_VENTA" />
+                  </externalMetadataColumns>
+                </output>
+                <output
+                  refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output]"
+                  isErrorOut="true"
+                  name="Teradata Source Error Output">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[COD_CAMPANIA_DIRIGIDA]"
+                      dataType="i4"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[COD_CAMPANIA_DIRIGIDA]"
+                      name="COD_CAMPANIA_DIRIGIDA" />
+                    <outputColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[DESC_CAMPANIA_DIRIGIDA]"
+                      dataType="wstr"
+                      length="200"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[DESC_CAMPANIA_DIRIGIDA]"
+                      name="DESC_CAMPANIA_DIRIGIDA" />
+                    <outputColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[COD_ACCION_DIRIGIDA]"
+                      dataType="i4"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[COD_ACCION_DIRIGIDA]"
+                      name="COD_ACCION_DIRIGIDA" />
+                    <outputColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[FEC_INICIO_TXT]"
+                      codePage="1252"
+                      dataType="str"
+                      length="10"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[FEC_INICIO_TXT]"
+                      name="FEC_INICIO_TXT" />
+                    <outputColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[FEC_FIN_TXT]"
+                      codePage="1252"
+                      dataType="str"
+                      length="10"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[FEC_FIN_TXT]"
+                      name="FEC_FIN_TXT" />
+                    <outputColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[publico_objetivo]"
+                      dataType="wstr"
+                      length="1000"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[publico_objetivo]"
+                      name="publico_objetivo" />
+                    <outputColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[DESC_SPEECH_VENTA]"
+                      dataType="wstr"
+                      length="1000"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[DESC_SPEECH_VENTA]"
+                      name="DESC_SPEECH_VENTA" />
+                    <outputColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[ErrorCode]"
+                      dataType="i4"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[ErrorCode]"
+                      name="ErrorCode"
+                      specialFlags="1" />
+                    <outputColumn
+                      refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[ErrorColumn]"
+                      dataType="i4"
+                      lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[ErrorColumn]"
+                      name="ErrorColumn"
+                      specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+          </components>
+          <paths>
+            <path
+              refId="Package\Tarea Flujo de datos.Paths[Salida de conversión de datos]"
+              endId="Package\Tarea Flujo de datos\Destino de OLE DB.Inputs[Entrada de destino de OLE DB]"
+              name="Salida de conversión de datos"
+              startId="Package\Tarea Flujo de datos\Conversión de datos.Outputs[Salida de conversión de datos]" />
+            <path
+              refId="Package\Tarea Flujo de datos.Paths[Teradata Source Output]"
+              endId="Package\Tarea Flujo de datos\Conversión de datos.Inputs[Entrada de conversión de datos]"
+              name="Teradata Source Output"
+              startId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output]" />
+          </paths>
+        </pipeline>
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
+<!--Esta sección CDATA contiene la información de diseño del paquete. Esta sección incluye información como, por ejemplo, las coordenadas (x,y), el ancho y el alto.-->
+<!--Si edita manualmente esta sección y comete un error, puede eliminarlo. -->
+<!--El paquete podrá cargarse normalmente, pero se perderá la información de diseño anterior y el diseñador reorganizará los elementos automáticamente en la superficie de diseño.-->
+<Objects
+  Version="8">
+  <!--Cada uno de los nodos siguientes contiene propiedades que no afectan al comportamiento en tiempo de ejecución.-->
+  <Package
+    design-time-name="Package">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph">
+        <NodeLayout
+          Size="180,42"
+          Id="Package\Tarea Flujo de datos"
+          TopLeft="163,73" />
+      </GraphLayout>
+    </LayoutInfo>
+  </Package>
+  <TaskHost
+    design-time-name="Package\Tarea Flujo de datos">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="8" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
+        <NodeLayout
+          Size="161,42"
+          Id="Package\Tarea Flujo de datos\Teradata Source"
+          TopLeft="239,74" />
+        <NodeLayout
+          Size="175,42"
+          Id="Package\Tarea Flujo de datos\Destino de OLE DB"
+          TopLeft="228,244" />
+        <NodeLayout
+          Size="180,42"
+          Id="Package\Tarea Flujo de datos\Conversión de datos"
+          TopLeft="231,162" />
+        <EdgeLayout
+          Id="Package\Tarea Flujo de datos.Paths[Teradata Source Output]"
+          TopLeft="320.25,116">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,46"
+              Start="0,0"
+              End="0,38.5">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,38.5" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <EdgeLayout
+          Id="Package\Tarea Flujo de datos.Paths[Salida de conversión de datos]"
+          TopLeft="318.25,204">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,40"
+              Start="0,0"
+              End="0,32.5">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,32.5" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <AnnotationLayout
+          Text="Se agrega variable de entorno dado que &#xD;&#xA;la Base cambia segun el ambiente"
+          ParentId="Package\Tarea Flujo de datos"
+          FontInfo="{assembly:Null}"
+          Size="246,60"
+          Id="98705e6f-7b7e-42cc-baf2-ccfe681f63ee"
+          TopLeft="461,127" />
+      </GraphLayout>
+    </LayoutInfo>
+  </TaskHost>
+  <PipelineComponentMetadata
+    design-time-name="Package\Tarea Flujo de datos\Teradata Source">
+    <Properties>
+      <Property>
+        <Name>DataSourceViewID</Name>
+      </Property>
+    </Properties>
+  </PipelineComponentMetadata>
+  <PipelineComponentMetadata
+    design-time-name="Package\Tarea Flujo de datos\Destino de OLE DB">
+    <Properties>
+      <Property>
+        <Name>DataSourceViewID</Name>
+      </Property>
+      <Property>
+        <Name>TableInfoObjectType</Name>
+        <Value
+          type="q2:string">Table</Value>
+      </Property>
+    </Properties>
+  </PipelineComponentMetadata>
+</Objects>]]></DTS:DesignTimeProperties>
+</DTS:Executable>

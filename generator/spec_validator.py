@@ -1,0 +1,284 @@
+"""
+spec_validator.py
+
+Validacion fail-fast de un process_spec, ANTES de tocar el template XML.
+Separado del generador propiamente dicho (mismo criterio de separacion de
+responsabilidades que ssis_parser.py / ssis_validator.py).
+
+validate_spec() intenta juntar TODOS los problemas en una sola pasada (en vez
+de abortar en el primer error) para que quien escribe el spec vea de una vez
+toda la lista de correcciones necesarias — sigue siendo "fail-fast" en el
+sentido de que el generador nunca empieza a modificar el template si esta
+lista no esta vacia.
+"""
+
+from __future__ import annotations
+
+from typing import Any, Dict, List
+
+from .xml_helpers import KNOWN_CONNECTION_MANAGERS
+
+SUPPORTED_SOURCE_TYPE = "teradata"
+SUPPORTED_DESTINATION_TYPE = "ole_db"
+SUPPORTED_TRANSFORMATION_TYPE = "data_conversion"
+STRING_DATA_TYPES = {"str", "wstr"}
+NON_UNICODE_STRING_TYPE = "str"
+
+
+class SpecValidationError(Exception):
+    """Se lanza cuando validate_spec() encuentra uno o mas problemas.
+    El mensaje incluye la lista completa, numerada, de errores."""
+
+    def __init__(self, errors: List[str]):
+        self.errors = errors
+        message = "process_spec invalido:\n" + "\n".join(
+            f"  {i}. {e}" for i, e in enumerate(errors, start=1)
+        )
+        super().__init__(message)
+
+
+def _non_empty_str(value: Any) -> bool:
+    return isinstance(value, str) and value.strip() != ""
+
+
+def _positive_int(value: Any) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value > 0
+
+
+def validate_spec(spec: Dict[str, Any]) -> List[str]:
+    """Devuelve la lista de errores encontrados (vacia si el spec es valido).
+    No lanza excepcion — ver assert_valid_spec() para la version que si."""
+    errors: List[str] = []
+
+    if not isinstance(spec, dict):
+        return ["El process_spec debe ser un objeto JSON (dict)."]
+
+    package = spec.get("package")
+    if not isinstance(package, dict):
+        errors.append("Falta 'package' (objeto) en el process_spec.")
+    else:
+        if not _non_empty_str(package.get("name")):
+            errors.append("'package.name' es obligatorio y no puede estar vacio.")
+
+    data_flow = spec.get("data_flow")
+    if not isinstance(data_flow, dict):
+        errors.append("Falta 'data_flow' (objeto) en el process_spec.")
+        return errors  # nada mas se puede validar sin data_flow
+
+    if not _non_empty_str(data_flow.get("name")):
+        errors.append("'data_flow.name' es obligatorio y no puede estar vacio.")
+
+    pipeline_columns = set()  # nombres validos como 'source' de un mapping
+
+    # -----------------------------------------------------------------
+    # source
+    # -----------------------------------------------------------------
+    source = data_flow.get("source")
+    if not isinstance(source, dict):
+        errors.append("Falta 'data_flow.source' (objeto).")
+        source = {}
+    else:
+        if source.get("type") != SUPPORTED_SOURCE_TYPE:
+            errors.append(
+                f"'data_flow.source.type' debe ser '{SUPPORTED_SOURCE_TYPE}' "
+                f"(este MVP no soporta otro tipo de origen); vino: {source.get('type')!r}."
+            )
+        if not _non_empty_str(source.get("name")):
+            errors.append("'data_flow.source.name' es obligatorio y no puede estar vacio.")
+        if not _non_empty_str(source.get("connection")):
+            errors.append("'data_flow.source.connection' es obligatorio y no puede estar vacio.")
+        elif source["connection"] not in KNOWN_CONNECTION_MANAGERS:
+            errors.append(
+                f"'data_flow.source.connection' = {source['connection']!r} no es un "
+                f"Connection Manager soportado por el template. Soportados: "
+                f"{sorted(KNOWN_CONNECTION_MANAGERS)}."
+            )
+        if not _non_empty_str(source.get("sql")):
+            errors.append("'data_flow.source.sql' es obligatorio y no puede estar vacio.")
+
+    columns = source.get("columns") if isinstance(source, dict) else None
+    if not isinstance(columns, list) or len(columns) == 0:
+        errors.append("'data_flow.source.columns' debe ser una lista no vacia.")
+        columns = []
+
+    seen_column_names = set()
+    for idx, col in enumerate(columns):
+        label = f"data_flow.source.columns[{idx}]"
+        if not isinstance(col, dict):
+            errors.append(f"{label} debe ser un objeto.")
+            continue
+        name = col.get("name")
+        if not _non_empty_str(name):
+            errors.append(f"{label}.name es obligatorio y no puede estar vacio.")
+            continue
+        if name in seen_column_names:
+            errors.append(
+                f"Columna de origen duplicada: '{name}' aparece mas de una vez "
+                "en data_flow.source.columns."
+            )
+        seen_column_names.add(name)
+        pipeline_columns.add(name)
+
+        data_type = col.get("data_type")
+        if not _non_empty_str(data_type):
+            errors.append(f"{label}.data_type es obligatorio y no puede estar vacio.")
+            data_type = None
+        if data_type in STRING_DATA_TYPES and not _positive_int(col.get("length")):
+            errors.append(
+                f"{label} (data_type={data_type!r}) requiere 'length' entero positivo."
+            )
+        if data_type == NON_UNICODE_STRING_TYPE and not _positive_int(col.get("code_page")):
+            errors.append(
+                f"{label} (data_type='str') requiere 'code_page' entero positivo."
+            )
+
+    # -----------------------------------------------------------------
+    # transformations — topologia soportada: exactamente 1 data_conversion
+    # -----------------------------------------------------------------
+    transformations = data_flow.get("transformations")
+    if not isinstance(transformations, list) or len(transformations) != 1:
+        errors.append(
+            "'data_flow.transformations' debe ser una lista con EXACTAMENTE 1 "
+            "elemento en este MVP (topologia soportada: Teradata Source -> "
+            "Data Conversion -> OLE DB Destination). Elementos encontrados: "
+            f"{len(transformations) if isinstance(transformations, list) else 'N/A'}."
+        )
+        transformations = []
+
+    conversion_outputs = set()
+    for idx, transform in enumerate(transformations):
+        label = f"data_flow.transformations[{idx}]"
+        if not isinstance(transform, dict):
+            errors.append(f"{label} debe ser un objeto.")
+            continue
+        if transform.get("type") != SUPPORTED_TRANSFORMATION_TYPE:
+            errors.append(
+                f"{label}.type debe ser '{SUPPORTED_TRANSFORMATION_TYPE}' "
+                f"(unico tipo de transformacion soportado por este MVP); "
+                f"vino: {transform.get('type')!r}."
+            )
+            continue
+        if not _non_empty_str(transform.get("name")):
+            errors.append(f"{label}.name es obligatorio y no puede estar vacio.")
+
+        conversions = transform.get("conversions")
+        if not isinstance(conversions, list) or len(conversions) == 0:
+            errors.append(f"{label}.conversions debe ser una lista no vacia.")
+            conversions = []
+
+        for c_idx, conv in enumerate(conversions):
+            c_label = f"{label}.conversions[{c_idx}]"
+            if not isinstance(conv, dict):
+                errors.append(f"{c_label} debe ser un objeto.")
+                continue
+            conv_input = conv.get("input")
+            conv_output = conv.get("output")
+            target_type = conv.get("target_type")
+
+            if not _non_empty_str(conv_input):
+                errors.append(f"{c_label}.input es obligatorio y no puede estar vacio.")
+            elif conv_input not in seen_column_names:
+                errors.append(
+                    f"{c_label}.input = '{conv_input}' no existe entre las columnas "
+                    "declaradas en data_flow.source.columns."
+                )
+
+            if not _non_empty_str(conv_output):
+                errors.append(f"{c_label}.output es obligatorio y no puede estar vacio.")
+            else:
+                if conv_output in conversion_outputs:
+                    errors.append(
+                        f"{c_label}.output = '{conv_output}' colisiona con el output "
+                        "de otra conversion (nombres de output de Data Conversion "
+                        "deben ser unicos entre si)."
+                    )
+                if conv_output in seen_column_names:
+                    errors.append(
+                        f"{c_label}.output = '{conv_output}' colisiona con un nombre "
+                        "de columna de origen ya existente (generaria ambiguedad al "
+                        "resolver 'source' en un mapping)."
+                    )
+                conversion_outputs.add(conv_output)
+                pipeline_columns.add(conv_output)
+
+            if not _non_empty_str(target_type):
+                errors.append(f"{c_label}.target_type es obligatorio y no puede estar vacio.")
+
+    # -----------------------------------------------------------------
+    # destination
+    # -----------------------------------------------------------------
+    destination = data_flow.get("destination")
+    if not isinstance(destination, dict):
+        errors.append("Falta 'data_flow.destination' (objeto).")
+        destination = {}
+    else:
+        if destination.get("type") != SUPPORTED_DESTINATION_TYPE:
+            errors.append(
+                f"'data_flow.destination.type' debe ser '{SUPPORTED_DESTINATION_TYPE}' "
+                f"(este MVP no soporta otro tipo de destino); vino: {destination.get('type')!r}."
+            )
+        if not _non_empty_str(destination.get("name")):
+            errors.append("'data_flow.destination.name' es obligatorio y no puede estar vacio.")
+        if not _non_empty_str(destination.get("connection")):
+            errors.append(
+                "'data_flow.destination.connection' es obligatorio y no puede estar vacio."
+            )
+        elif destination["connection"] not in KNOWN_CONNECTION_MANAGERS:
+            errors.append(
+                f"'data_flow.destination.connection' = {destination['connection']!r} no es "
+                f"un Connection Manager soportado por el template. Soportados: "
+                f"{sorted(KNOWN_CONNECTION_MANAGERS)}."
+            )
+        if not _non_empty_str(destination.get("table")):
+            errors.append("'data_flow.destination.table' es obligatorio y no puede estar vacio.")
+
+    mappings = destination.get("mappings") if isinstance(destination, dict) else None
+    if not isinstance(mappings, list) or len(mappings) == 0:
+        errors.append("'data_flow.destination.mappings' debe ser una lista no vacia.")
+        mappings = []
+
+    for idx, mapping in enumerate(mappings):
+        label = f"data_flow.destination.mappings[{idx}]"
+        if not isinstance(mapping, dict):
+            errors.append(f"{label} debe ser un objeto.")
+            continue
+
+        source_col = mapping.get("source")
+        if not _non_empty_str(source_col):
+            errors.append(f"{label}.source es obligatorio y no puede estar vacio.")
+        elif source_col not in pipeline_columns:
+            errors.append(
+                f"{label}.source = '{source_col}' no existe en el pipeline (ni como "
+                "columna de origen ni como output de una conversion)."
+            )
+
+        if not _non_empty_str(mapping.get("target")):
+            errors.append(f"{label}.target es obligatorio y no puede estar vacio.")
+
+        target_type = mapping.get("target_data_type")
+        if not _non_empty_str(target_type):
+            errors.append(f"{label}.target_data_type es obligatorio y no puede estar vacio.")
+
+        if target_type in STRING_DATA_TYPES and not _positive_int(mapping.get("target_length")):
+            errors.append(
+                f"{label} (target_data_type={target_type!r}) requiere "
+                "'target_length' entero positivo."
+            )
+        if target_type == NON_UNICODE_STRING_TYPE and not _positive_int(
+            mapping.get("target_code_page")
+        ):
+            errors.append(
+                f"{label} (target_data_type='str') requiere 'target_code_page' "
+                "entero positivo."
+            )
+
+    return errors
+
+
+def assert_valid_spec(spec: Dict[str, Any]) -> None:
+    """Como validate_spec(), pero lanza SpecValidationError si hay errores.
+    Debe llamarse ANTES de tocar el template — el generador nunca modifica
+    XML con un spec invalido."""
+    errors = validate_spec(spec)
+    if errors:
+        raise SpecValidationError(errors)

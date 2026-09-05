@@ -1,0 +1,48 @@
+{
+  "package": {
+    "name": "CampaniasGenerado"
+  },
+  "data_flow": {
+    "name": "Tarea Flujo de datos",
+    "source": {
+      "type": "teradata",
+      "name": "Teradata Source",
+      "connection": "cnxTeradata",
+      "sql": "SELECT\n    COD_CAMPANIA_DIRIGIDA,\n    DESC_CAMPANIA_DIRIGIDA,\n    COD_ACCION_DIRIGIDA,\n    CAST(CAST(FEC_INICIO AS DATE FORMAT 'YYYY-MM-DD') AS CHAR(10)) AS FEC_INICIO_TXT,\n\tCAST(CAST(FEC_FIN AS DATE FORMAT 'YYYY-MM-DD') AS CHAR(10)) AS FEC_FIN_TXT,\n    PUBLICO_OBJETIVO,\n    DESC_SPEECH_VENTA\nFROM D_CAMPANIAS_VIGENTES_RED",
+      "columns": [
+        {"name": "COD_CAMPANIA_DIRIGIDA", "data_type": "i4"},
+        {"name": "DESC_CAMPANIA_DIRIGIDA", "data_type": "wstr", "length": 200},
+        {"name": "COD_ACCION_DIRIGIDA", "data_type": "i4"},
+        {"name": "FEC_INICIO_TXT", "data_type": "str", "length": 10, "code_page": 1252},
+        {"name": "FEC_FIN_TXT", "data_type": "str", "length": 10, "code_page": 1252},
+        {"name": "publico_objetivo", "data_type": "wstr", "length": 1000},
+        {"name": "DESC_SPEECH_VENTA", "data_type": "wstr", "length": 1000}
+      ]
+    },
+    "transformations": [
+      {
+        "type": "data_conversion",
+        "name": "Conversión de datos",
+        "conversions": [
+          {"input": "FEC_INICIO_TXT", "output": "FechaInicio_SAL", "target_type": "dbDate"},
+          {"input": "FEC_FIN_TXT", "output": "FechaFin_SAL", "target_type": "dbDate"}
+        ]
+      }
+    ],
+    "destination": {
+      "type": "ole_db",
+      "name": "Destino de OLE DB",
+      "connection": "cnxSrvBsLogSBD01",
+      "table": "[dbo].[TiposCampanias]",
+      "mappings": [
+        {"source": "COD_CAMPANIA_DIRIGIDA", "target": "CodigoCampania", "target_data_type": "i4"},
+        {"source": "COD_ACCION_DIRIGIDA", "target": "CodigoAccion", "target_data_type": "i4"},
+        {"source": "DESC_SPEECH_VENTA", "target": "Speech", "target_data_type": "wstr", "target_length": 1000},
+        {"source": "publico_objetivo", "target": "PublicoObjetivo", "target_data_type": "wstr", "target_length": 1000},
+        {"source": "FechaInicio_SAL", "target": "FechaInicio", "target_data_type": "wstr", "target_length": 27},
+        {"source": "FechaFin_SAL", "target": "FechaFin", "target_data_type": "wstr", "target_length": 27},
+        {"source": "DESC_CAMPANIA_DIRIGIDA", "target": "Descripcion", "target_data_type": "wstr", "target_length": 1000}
+      ]
+    }
+  }
+}

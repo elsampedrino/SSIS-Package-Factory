@@ -1,0 +1,2518 @@
+{
+  "source_file": "BipSuc_CampaniasVigentes.dtsx",
+  "package_name": "Package1",
+  "package_dtsid": "{03C7554A-0D65-44DD-9BEF-4D37D0AF5CB8}",
+  "variables": [],
+  "control_flow": {
+    "executables": [
+      {
+        "ref_id": "Package\\Tarea Flujo de datos",
+        "name": "Tarea Flujo de datos",
+        "dtsid": "{EBC1ABDC-774E-4663-B6F3-7563EC1CDCD9}",
+        "executable_type": "Microsoft.Pipeline",
+        "type": "pipeline",
+        "description": "Tarea Flujo de datos",
+        "disabled": false,
+        "delay_validation": false,
+        "thread_hint": null,
+        "variables": [],
+        "data_flow": {
+          "name": "Tarea Flujo de datos",
+          "ref_id": "Package\\Tarea Flujo de datos",
+          "components": [
+            {
+              "name": "Conversión de datos",
+              "ref_id": "Package\\Tarea Flujo de datos\\Conversión de datos",
+              "class_id": "Microsoft.DataConvert",
+              "type": "data_conversion",
+              "version": null,
+              "description": "Conversión de datos",
+              "validate_external_metadata": null,
+              "connection": null,
+              "connections": [],
+              "raw_properties": [],
+              "inputs": [
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Inputs[Entrada de conversión de datos]",
+                  "name": "Entrada de conversión de datos",
+                  "description": null,
+                  "has_side_effects": false,
+                  "error_row_disposition": null,
+                  "error_or_truncation_operation": null,
+                  "columns": [
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Inputs[Entrada de conversión de datos].Columns[FEC_INICIO_TXT]",
+                      "name": "FEC_INICIO_TXT",
+                      "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_INICIO_TXT]",
+                      "cached_name": "FEC_INICIO_TXT",
+                      "cached_data_type": "str",
+                      "cached_length": 10,
+                      "cached_code_page": 1252,
+                      "cached_sort_key_position": null,
+                      "external_metadata_column_id": null
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Inputs[Entrada de conversión de datos].Columns[FEC_FIN_TXT]",
+                      "name": "FEC_FIN_TXT",
+                      "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_FIN_TXT]",
+                      "cached_name": "FEC_FIN_TXT",
+                      "cached_data_type": "str",
+                      "cached_length": 10,
+                      "cached_code_page": 1252,
+                      "cached_sort_key_position": null,
+                      "external_metadata_column_id": null
+                    }
+                  ],
+                  "external_metadata_columns": []
+                }
+              ],
+              "outputs": [
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de conversión de datos]",
+                  "name": "Salida de conversión de datos",
+                  "description": null,
+                  "is_error_output": false,
+                  "is_sorted": false,
+                  "synchronous_input_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Inputs[Entrada de conversión de datos]",
+                  "exclusion_group": "1",
+                  "expression": null,
+                  "friendly_expression": null,
+                  "evaluation_order": null,
+                  "is_default_output": false,
+                  "raw_properties": [],
+                  "columns": [
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de conversión de datos].Columns[FechaInicio_SAL]",
+                      "name": "FechaInicio_SAL",
+                      "data_type": "dbDate",
+                      "length": null,
+                      "code_page": null,
+                      "lineage_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de conversión de datos].Columns[FechaInicio_SAL]",
+                      "external_metadata_column_id": null,
+                      "source_input_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_INICIO_TXT]",
+                      "expression": null,
+                      "friendly_expression": null,
+                      "sort_key_position": null,
+                      "error_row_disposition": "FailComponent",
+                      "truncation_row_disposition": "FailComponent",
+                      "special_flags": null,
+                      "raw_properties": [
+                        {
+                          "name": "SourceInputColumnLineageID",
+                          "value": "#{Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_INICIO_TXT]}",
+                          "data_type": "System.Int32",
+                          "description": "Especifica la columna de entrada usada como origen de datos para la conversión.",
+                          "contains_id": true,
+                          "expression_type": null,
+                          "type_converter": null,
+                          "ui_type_editor": null,
+                          "referenced_lineage_ids": [
+                            "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_INICIO_TXT]"
+                          ]
+                        },
+                        {
+                          "name": "FastParse",
+                          "value": "false",
+                          "data_type": "System.Boolean",
+                          "description": "Indica si la columna usa las rutinas de análisis más rápidas independientes de la configuración regional.",
+                          "contains_id": false,
+                          "expression_type": null,
+                          "type_converter": null,
+                          "ui_type_editor": null,
+                          "referenced_lineage_ids": []
+                        }
+                      ]
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de conversión de datos].Columns[FechaFin_SAL]",
+                      "name": "FechaFin_SAL",
+                      "data_type": "dbDate",
+                      "length": null,
+                      "code_page": null,
+                      "lineage_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de conversión de datos].Columns[FechaFin_SAL]",
+                      "external_metadata_column_id": null,
+                      "source_input_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_FIN_TXT]",
+                      "expression": null,
+                      "friendly_expression": null,
+                      "sort_key_position": null,
+                      "error_row_disposition": "FailComponent",
+                      "truncation_row_disposition": "FailComponent",
+                      "special_flags": null,
+                      "raw_properties": [
+                        {
+                          "name": "SourceInputColumnLineageID",
+                          "value": "#{Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_FIN_TXT]}",
+                          "data_type": "System.Int32",
+                          "description": "Especifica la columna de entrada usada como origen de datos para la conversión.",
+                          "contains_id": true,
+                          "expression_type": null,
+                          "type_converter": null,
+                          "ui_type_editor": null,
+                          "referenced_lineage_ids": [
+                            "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_FIN_TXT]"
+                          ]
+                        },
+                        {
+                          "name": "FastParse",
+                          "value": "false",
+                          "data_type": "System.Boolean",
+                          "description": "Indica si la columna usa las rutinas de análisis más rápidas independientes de la configuración regional.",
+                          "contains_id": false,
+                          "expression_type": null,
+                          "type_converter": null,
+                          "ui_type_editor": null,
+                          "referenced_lineage_ids": []
+                        }
+                      ]
+                    }
+                  ],
+                  "external_metadata_columns": []
+                }
+              ],
+              "error_outputs": [
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de error de conversión de datos]",
+                  "name": "Salida de error de conversión de datos",
+                  "description": null,
+                  "is_error_output": true,
+                  "is_sorted": false,
+                  "synchronous_input_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Inputs[Entrada de conversión de datos]",
+                  "exclusion_group": "1",
+                  "expression": null,
+                  "friendly_expression": null,
+                  "evaluation_order": null,
+                  "is_default_output": false,
+                  "raw_properties": [],
+                  "columns": [
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de error de conversión de datos].Columns[ErrorCode]",
+                      "name": "ErrorCode",
+                      "data_type": "i4",
+                      "length": null,
+                      "code_page": null,
+                      "lineage_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de error de conversión de datos].Columns[ErrorCode]",
+                      "external_metadata_column_id": null,
+                      "source_input_lineage_id": null,
+                      "expression": null,
+                      "friendly_expression": null,
+                      "sort_key_position": null,
+                      "error_row_disposition": null,
+                      "truncation_row_disposition": null,
+                      "special_flags": "1",
+                      "raw_properties": []
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de error de conversión de datos].Columns[ErrorColumn]",
+                      "name": "ErrorColumn",
+                      "data_type": "i4",
+                      "length": null,
+                      "code_page": null,
+                      "lineage_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de error de conversión de datos].Columns[ErrorColumn]",
+                      "external_metadata_column_id": null,
+                      "source_input_lineage_id": null,
+                      "expression": null,
+                      "friendly_expression": null,
+                      "sort_key_position": null,
+                      "error_row_disposition": null,
+                      "truncation_row_disposition": null,
+                      "special_flags": "2",
+                      "raw_properties": []
+                    }
+                  ],
+                  "external_metadata_columns": []
+                }
+              ]
+            },
+            {
+              "name": "Destino de OLE DB",
+              "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB",
+              "class_id": "Microsoft.OLEDBDestination",
+              "type": "ole_db_destination",
+              "version": "4",
+              "description": "Destino de OLE DB",
+              "validate_external_metadata": null,
+              "connection": "Project.ConnectionManagers[cnxSrvBsLogSBD01]",
+              "connections": [
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Connections[OleDbConnection]",
+                  "name": "OleDbConnection",
+                  "connection_manager_ref_id": "Project.ConnectionManagers[cnxSrvBsLogSBD01]",
+                  "connection_manager_id": "{5DA5808C-8489-48AC-8614-CB034DE02B61}:external",
+                  "description": "La conexión de tiempo de ejecución OLE DB usada para obtener acceso a la base de datos."
+                }
+              ],
+              "raw_properties": [
+                {
+                  "name": "CommandTimeout",
+                  "value": "0",
+                  "data_type": "System.Int32",
+                  "description": "Número de segundos antes de que se agote el tiempo de espera de un comando. Un valor de 0 indica un tiempo de espera infinito.",
+                  "contains_id": false,
+                  "expression_type": null,
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "OpenRowset",
+                  "value": "[dbo].[TiposCampanias]",
+                  "data_type": "System.String",
+                  "description": "Especifica el nombre del objeto de base de datos usado para abrir un conjunto de filas.",
+                  "contains_id": false,
+                  "expression_type": null,
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "OpenRowsetVariable",
+                  "value": "",
+                  "data_type": "System.String",
+                  "description": "Especifica la variable que contiene el nombre del objeto de base de datos usado para abrir un conjunto de filas.",
+                  "contains_id": false,
+                  "expression_type": null,
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "SqlCommand",
+                  "value": "",
+                  "data_type": "System.String",
+                  "description": "Comando SQL para ejecutar.",
+                  "contains_id": false,
+                  "expression_type": null,
+                  "type_converter": null,
+                  "ui_type_editor": "Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor",
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "DefaultCodePage",
+                  "value": "1252",
+                  "data_type": "System.Int32",
+                  "description": "Especifica la página de códigos de columna para utilizar cuando la información de página de códigos no está disponible en el origen de datos.",
+                  "contains_id": false,
+                  "expression_type": null,
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "AlwaysUseDefaultCodePage",
+                  "value": "false",
+                  "data_type": "System.Boolean",
+                  "description": "Fuerza el uso del valor de la propiedad DefaultCodePage al describir datos de caracteres.",
+                  "contains_id": false,
+                  "expression_type": null,
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "AccessMode",
+                  "value": "0",
+                  "data_type": "System.Int32",
+                  "description": "Especifica el modo utilizado para obtener acceso a la base de datos.",
+                  "contains_id": false,
+                  "expression_type": null,
+                  "type_converter": "AccessMode",
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "FastLoadKeepIdentity",
+                  "value": "false",
+                  "data_type": "System.Boolean",
+                  "description": "Indica si los valores proporcionados para columnas de identidad se van a copiar al destino. Si es False, los valores de las columnas de identidad se generan automáticamente en el destino. Solo se aplica si está activada la carga rápida.",
+                  "contains_id": false,
+                  "expression_type": null,
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "FastLoadKeepNulls",
+                  "value": "false",
+                  "data_type": "System.Boolean",
+                  "description": "Indica si las columnas que contienen NULL tendrán NULL insertado en el destino. Si es False, las columnas que contienen NULL tendrán sus valores predeterminados insertados en el destino. Solo se aplica si está activada la carga rápida.",
+                  "contains_id": false,
+                  "expression_type": null,
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "FastLoadOptions",
+                  "value": "TABLOCK,CHECK_CONSTRAINTS",
+                  "data_type": "System.String",
+                  "description": "Especifica opciones para usar con la carga rápida. Solo se aplica si está activada la carga rápida.",
+                  "contains_id": false,
+                  "expression_type": null,
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "FastLoadMaxInsertCommitSize",
+                  "value": "2147483647",
+                  "data_type": "System.Int32",
+                  "description": "Especifica cuándo se emiten confirmaciones durante la inserción de datos. El valor 0 especifica que se emitirá una confirmación al final de la inserción de datos. Solo se aplica si está activada la carga rápida.",
+                  "contains_id": false,
+                  "expression_type": null,
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                }
+              ],
+              "inputs": [
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB]",
+                  "name": "Entrada de destino de OLE DB",
+                  "description": null,
+                  "has_side_effects": true,
+                  "error_row_disposition": "FailComponent",
+                  "error_or_truncation_operation": "Insertar",
+                  "columns": [
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].Columns[COD_CAMPANIA_DIRIGIDA]",
+                      "name": "COD_CAMPANIA_DIRIGIDA",
+                      "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[COD_CAMPANIA_DIRIGIDA]",
+                      "cached_name": "COD_CAMPANIA_DIRIGIDA",
+                      "cached_data_type": "i4",
+                      "cached_length": null,
+                      "cached_code_page": null,
+                      "cached_sort_key_position": null,
+                      "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[CodigoCampania]"
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].Columns[COD_ACCION_DIRIGIDA]",
+                      "name": "COD_ACCION_DIRIGIDA",
+                      "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[COD_ACCION_DIRIGIDA]",
+                      "cached_name": "COD_ACCION_DIRIGIDA",
+                      "cached_data_type": "i4",
+                      "cached_length": null,
+                      "cached_code_page": null,
+                      "cached_sort_key_position": null,
+                      "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[CodigoAccion]"
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].Columns[DESC_SPEECH_VENTA]",
+                      "name": "DESC_SPEECH_VENTA",
+                      "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[DESC_SPEECH_VENTA]",
+                      "cached_name": "DESC_SPEECH_VENTA",
+                      "cached_data_type": "wstr",
+                      "cached_length": 1000,
+                      "cached_code_page": null,
+                      "cached_sort_key_position": null,
+                      "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[Speech]"
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].Columns[publico_objetivo]",
+                      "name": "publico_objetivo",
+                      "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[publico_objetivo]",
+                      "cached_name": "publico_objetivo",
+                      "cached_data_type": "wstr",
+                      "cached_length": 1000,
+                      "cached_code_page": null,
+                      "cached_sort_key_position": null,
+                      "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[PublicoObjetivo]"
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].Columns[FechaInicio_SAL]",
+                      "name": "FechaInicio_SAL",
+                      "source_lineage_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de conversión de datos].Columns[FechaInicio_SAL]",
+                      "cached_name": "FechaInicio_SAL",
+                      "cached_data_type": "dbDate",
+                      "cached_length": null,
+                      "cached_code_page": null,
+                      "cached_sort_key_position": null,
+                      "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[FechaInicio]"
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].Columns[FechaFin_SAL]",
+                      "name": "FechaFin_SAL",
+                      "source_lineage_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de conversión de datos].Columns[FechaFin_SAL]",
+                      "cached_name": "FechaFin_SAL",
+                      "cached_data_type": "dbDate",
+                      "cached_length": null,
+                      "cached_code_page": null,
+                      "cached_sort_key_position": null,
+                      "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[FechaFin]"
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].Columns[DESC_CAMPANIA_DIRIGIDA]",
+                      "name": "DESC_CAMPANIA_DIRIGIDA",
+                      "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[DESC_CAMPANIA_DIRIGIDA]",
+                      "cached_name": "DESC_CAMPANIA_DIRIGIDA",
+                      "cached_data_type": "wstr",
+                      "cached_length": 200,
+                      "cached_code_page": null,
+                      "cached_sort_key_position": null,
+                      "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[Descripcion]"
+                    }
+                  ],
+                  "external_metadata_columns": [
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[CodigoCampania]",
+                      "name": "CodigoCampania",
+                      "data_type": "i4",
+                      "length": null,
+                      "code_page": null
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[CodigoAccion]",
+                      "name": "CodigoAccion",
+                      "data_type": "i4",
+                      "length": null,
+                      "code_page": null
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[FechaInicio]",
+                      "name": "FechaInicio",
+                      "data_type": "wstr",
+                      "length": 27,
+                      "code_page": null
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[FechaFin]",
+                      "name": "FechaFin",
+                      "data_type": "wstr",
+                      "length": 27,
+                      "code_page": null
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[Speech]",
+                      "name": "Speech",
+                      "data_type": "wstr",
+                      "length": 1000,
+                      "code_page": null
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[Descripcion]",
+                      "name": "Descripcion",
+                      "data_type": "wstr",
+                      "length": 1000,
+                      "code_page": null
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[PublicoObjetivo]",
+                      "name": "PublicoObjetivo",
+                      "data_type": "wstr",
+                      "length": 1000,
+                      "code_page": null
+                    }
+                  ]
+                }
+              ],
+              "outputs": [],
+              "error_outputs": [
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Outputs[Salida de error de destino de OLE DB]",
+                  "name": "Salida de error de destino de OLE DB",
+                  "description": null,
+                  "is_error_output": true,
+                  "is_sorted": false,
+                  "synchronous_input_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB]",
+                  "exclusion_group": "1",
+                  "expression": null,
+                  "friendly_expression": null,
+                  "evaluation_order": null,
+                  "is_default_output": false,
+                  "raw_properties": [],
+                  "columns": [
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Outputs[Salida de error de destino de OLE DB].Columns[ErrorCode]",
+                      "name": "ErrorCode",
+                      "data_type": "i4",
+                      "length": null,
+                      "code_page": null,
+                      "lineage_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Outputs[Salida de error de destino de OLE DB].Columns[ErrorCode]",
+                      "external_metadata_column_id": null,
+                      "source_input_lineage_id": null,
+                      "expression": null,
+                      "friendly_expression": null,
+                      "sort_key_position": null,
+                      "error_row_disposition": null,
+                      "truncation_row_disposition": null,
+                      "special_flags": "1",
+                      "raw_properties": []
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Outputs[Salida de error de destino de OLE DB].Columns[ErrorColumn]",
+                      "name": "ErrorColumn",
+                      "data_type": "i4",
+                      "length": null,
+                      "code_page": null,
+                      "lineage_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Outputs[Salida de error de destino de OLE DB].Columns[ErrorColumn]",
+                      "external_metadata_column_id": null,
+                      "source_input_lineage_id": null,
+                      "expression": null,
+                      "friendly_expression": null,
+                      "sort_key_position": null,
+                      "error_row_disposition": null,
+                      "truncation_row_disposition": null,
+                      "special_flags": "2",
+                      "raw_properties": []
+                    }
+                  ],
+                  "external_metadata_columns": []
+                }
+              ],
+              "properties": {
+                "open_rowset": "[dbo].[TiposCampanias]",
+                "access_mode": "0",
+                "fast_load_options": "TABLOCK,CHECK_CONSTRAINTS",
+                "fast_load_max_insert_commit_size": 2147483647,
+                "sql_command": ""
+              },
+              "mappings": [
+                {
+                  "source_column": "COD_CAMPANIA_DIRIGIDA",
+                  "source_component": "Teradata Source",
+                  "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[COD_CAMPANIA_DIRIGIDA]",
+                  "pipeline_input_column": "COD_CAMPANIA_DIRIGIDA",
+                  "destination_column": "CodigoCampania",
+                  "destination_external_metadata_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[CodigoCampania]"
+                },
+                {
+                  "source_column": "COD_ACCION_DIRIGIDA",
+                  "source_component": "Teradata Source",
+                  "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[COD_ACCION_DIRIGIDA]",
+                  "pipeline_input_column": "COD_ACCION_DIRIGIDA",
+                  "destination_column": "CodigoAccion",
+                  "destination_external_metadata_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[CodigoAccion]"
+                },
+                {
+                  "source_column": "DESC_SPEECH_VENTA",
+                  "source_component": "Teradata Source",
+                  "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[DESC_SPEECH_VENTA]",
+                  "pipeline_input_column": "DESC_SPEECH_VENTA",
+                  "destination_column": "Speech",
+                  "destination_external_metadata_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[Speech]"
+                },
+                {
+                  "source_column": "publico_objetivo",
+                  "source_component": "Teradata Source",
+                  "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[publico_objetivo]",
+                  "pipeline_input_column": "publico_objetivo",
+                  "destination_column": "PublicoObjetivo",
+                  "destination_external_metadata_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[PublicoObjetivo]"
+                },
+                {
+                  "source_column": "FechaInicio_SAL",
+                  "source_component": "Conversión de datos",
+                  "source_lineage_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de conversión de datos].Columns[FechaInicio_SAL]",
+                  "pipeline_input_column": "FechaInicio_SAL",
+                  "destination_column": "FechaInicio",
+                  "destination_external_metadata_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[FechaInicio]"
+                },
+                {
+                  "source_column": "FechaFin_SAL",
+                  "source_component": "Conversión de datos",
+                  "source_lineage_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de conversión de datos].Columns[FechaFin_SAL]",
+                  "pipeline_input_column": "FechaFin_SAL",
+                  "destination_column": "FechaFin",
+                  "destination_external_metadata_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[FechaFin]"
+                },
+                {
+                  "source_column": "DESC_CAMPANIA_DIRIGIDA",
+                  "source_component": "Teradata Source",
+                  "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[DESC_CAMPANIA_DIRIGIDA]",
+                  "pipeline_input_column": "DESC_CAMPANIA_DIRIGIDA",
+                  "destination_column": "Descripcion",
+                  "destination_external_metadata_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[Descripcion]"
+                }
+              ]
+            },
+            {
+              "name": "Teradata Source",
+              "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source",
+              "class_id": "Microsoft.SSISTeradataSrc",
+              "type": "teradata_source",
+              "version": "1",
+              "description": "Teradata Source",
+              "validate_external_metadata": null,
+              "connection": "Project.ConnectionManagers[cnxTeradata]",
+              "connections": [
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Connections[TeradataConnection]",
+                  "name": "TeradataConnection",
+                  "connection_manager_ref_id": "Project.ConnectionManagers[cnxTeradata]",
+                  "connection_manager_id": "{29B4FDD4-193E-4D63-AC90-5C5CDA50E051}:external",
+                  "description": "The Teradata runtime connection used to access the database."
+                }
+              ],
+              "raw_properties": [
+                {
+                  "name": "TableName",
+                  "value": "",
+                  "data_type": "System.String",
+                  "description": "The name of the table to be fetched.",
+                  "contains_id": false,
+                  "expression_type": "Notify",
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "SqlCommand",
+                  "value": "SELECT\n    COD_CAMPANIA_DIRIGIDA,\n    DESC_CAMPANIA_DIRIGIDA,\n    COD_ACCION_DIRIGIDA,\n    CAST(CAST(FEC_INICIO AS DATE FORMAT 'YYYY-MM-DD') AS CHAR(10)) AS FEC_INICIO_TXT,\n\tCAST(CAST(FEC_FIN AS DATE FORMAT 'YYYY-MM-DD') AS CHAR(10)) AS FEC_FIN_TXT,\n    PUBLICO_OBJETIVO,\n    DESC_SPEECH_VENTA\nFROM D_CAMPANIAS_VIGENTES_RED",
+                  "data_type": "System.String",
+                  "description": "The SQL command to be executed.",
+                  "contains_id": false,
+                  "expression_type": "Notify",
+                  "type_converter": null,
+                  "ui_type_editor": "Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor, Microsoft.DataTransformationServices.Controls, Version=17.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91",
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "BlockSize",
+                  "value": "1048576",
+                  "data_type": "System.Int32",
+                  "description": "Data transfer block size.",
+                  "contains_id": false,
+                  "expression_type": "Notify",
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "BufferMaxSize",
+                  "value": "16775552",
+                  "data_type": "System.Int32",
+                  "description": "Maximum size of a data buffer when 'Buffer mode' is applied. Value must be large enough to hold at least one data row (including 8 overhead bytes per row at most).",
+                  "contains_id": false,
+                  "expression_type": "Notify",
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "BufferMode",
+                  "value": "true",
+                  "data_type": "System.Boolean",
+                  "description": "Indicates which type of Load method is used. True stands for 'Progress Buffered Rows'. False indicates 'Progress Row By Row'.",
+                  "contains_id": false,
+                  "expression_type": "Notify",
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "DataEncryption",
+                  "value": "false",
+                  "data_type": "System.Boolean",
+                  "description": "SQL requests and responses data encryption.",
+                  "contains_id": false,
+                  "expression_type": "Notify",
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "DefaultCodePage",
+                  "value": "1252",
+                  "data_type": "System.Int32",
+                  "description": "The code page to use when code page information is unavailable from the data source.",
+                  "contains_id": false,
+                  "expression_type": "Notify",
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "DetailedTracingFile",
+                  "value": "",
+                  "data_type": "System.String",
+                  "description": "A trace file name. Setting a value for this property enables TPT detailed tracing.",
+                  "contains_id": false,
+                  "expression_type": "Notify",
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "DetailedTracingLevel",
+                  "value": "1",
+                  "data_type": "System.Int32",
+                  "description": "Specifies the types of diagnostic messages written by each instance of the dirver to an external log file. The diagnostic trace function provides more detailed information (including the version number) in the log file to aid in problem tracking and diagnosis.",
+                  "contains_id": false,
+                  "expression_type": null,
+                  "type_converter": "DetailedTracingLevel",
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "DiscardLargeRow",
+                  "value": "false",
+                  "data_type": "System.Boolean",
+                  "description": "Whether or not to discard large rows.",
+                  "contains_id": false,
+                  "expression_type": "Notify",
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "ExtendedStringColumnsAllocation",
+                  "value": "false",
+                  "data_type": "System.Boolean",
+                  "description": "Use maximal character buffers allocation factor. Used when 'Export Width Table ID' = 'Maximum Defaults'.",
+                  "contains_id": false,
+                  "expression_type": "Notify",
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "JobMaxRowSize",
+                  "value": "64",
+                  "data_type": "System.Int32",
+                  "description": "Maximum row size (kb) it can support in export. Valid values are: 64, 1024.",
+                  "contains_id": false,
+                  "expression_type": null,
+                  "type_converter": "JobMaxRowSize",
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "MaxSessions",
+                  "value": "8",
+                  "data_type": "System.Int32",
+                  "description": "Maximum number of sessions to log on.",
+                  "contains_id": false,
+                  "expression_type": "Notify",
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "MinSessions",
+                  "value": "4",
+                  "data_type": "System.Int32",
+                  "description": "Minimum number of sessions required.",
+                  "contains_id": false,
+                  "expression_type": "Notify",
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "QueryBandSessionInfo",
+                  "value": "",
+                  "data_type": "System.String",
+                  "description": "A user-defined query band expression.",
+                  "contains_id": false,
+                  "expression_type": "Notify",
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "SpoolMode",
+                  "value": "0",
+                  "data_type": "System.Int32",
+                  "description": "Specifies whether to use spool or not while running the current Export job.",
+                  "contains_id": false,
+                  "expression_type": null,
+                  "type_converter": "SpoolMode",
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "TenacityHours",
+                  "value": "4",
+                  "data_type": "System.Int32",
+                  "description": "The number of hours to continue trying to log on when the maximum number of load jobs is already running on the Teradata Database.",
+                  "contains_id": false,
+                  "expression_type": "Notify",
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "TenacitySleep",
+                  "value": "6",
+                  "data_type": "System.Int32",
+                  "description": "The number of minutes to pause before retrying to log on when the maximum number of load jobs is already running on the Teradata Database.",
+                  "contains_id": false,
+                  "expression_type": "Notify",
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "UnicodePassThrough",
+                  "value": "false",
+                  "data_type": "System.Boolean",
+                  "description": "Whether to allow Pass Through Characters (PTCs) to be exported from Teradata.",
+                  "contains_id": false,
+                  "expression_type": "Notify",
+                  "type_converter": null,
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                },
+                {
+                  "name": "AccessMode",
+                  "value": "1",
+                  "data_type": "System.Int32",
+                  "description": "The mode used to access the database.",
+                  "contains_id": false,
+                  "expression_type": null,
+                  "type_converter": "AccessMode",
+                  "ui_type_editor": null,
+                  "referenced_lineage_ids": []
+                }
+              ],
+              "inputs": [],
+              "outputs": [
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output]",
+                  "name": "Teradata Source Output",
+                  "description": null,
+                  "is_error_output": false,
+                  "is_sorted": false,
+                  "synchronous_input_id": null,
+                  "exclusion_group": null,
+                  "expression": null,
+                  "friendly_expression": null,
+                  "evaluation_order": null,
+                  "is_default_output": false,
+                  "raw_properties": [],
+                  "columns": [
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[COD_CAMPANIA_DIRIGIDA]",
+                      "name": "COD_CAMPANIA_DIRIGIDA",
+                      "data_type": "i4",
+                      "length": null,
+                      "code_page": null,
+                      "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[COD_CAMPANIA_DIRIGIDA]",
+                      "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[COD_CAMPANIA_DIRIGIDA]",
+                      "source_input_lineage_id": null,
+                      "expression": null,
+                      "friendly_expression": null,
+                      "sort_key_position": null,
+                      "error_row_disposition": null,
+                      "truncation_row_disposition": null,
+                      "special_flags": null,
+                      "raw_properties": []
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[DESC_CAMPANIA_DIRIGIDA]",
+                      "name": "DESC_CAMPANIA_DIRIGIDA",
+                      "data_type": "wstr",
+                      "length": 200,
+                      "code_page": null,
+                      "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[DESC_CAMPANIA_DIRIGIDA]",
+                      "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[DESC_CAMPANIA_DIRIGIDA]",
+                      "source_input_lineage_id": null,
+                      "expression": null,
+                      "friendly_expression": null,
+                      "sort_key_position": null,
+                      "error_row_disposition": null,
+                      "truncation_row_disposition": null,
+                      "special_flags": null,
+                      "raw_properties": []
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[COD_ACCION_DIRIGIDA]",
+                      "name": "COD_ACCION_DIRIGIDA",
+                      "data_type": "i4",
+                      "length": null,
+                      "code_page": null,
+                      "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[COD_ACCION_DIRIGIDA]",
+                      "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[COD_ACCION_DIRIGIDA]",
+                      "source_input_lineage_id": null,
+                      "expression": null,
+                      "friendly_expression": null,
+                      "sort_key_position": null,
+                      "error_row_disposition": null,
+                      "truncation_row_disposition": null,
+                      "special_flags": null,
+                      "raw_properties": []
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_INICIO_TXT]",
+                      "name": "FEC_INICIO_TXT",
+                      "data_type": "str",
+                      "length": 10,
+                      "code_page": 1252,
+                      "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_INICIO_TXT]",
+                      "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[FEC_INICIO_TXT]",
+                      "source_input_lineage_id": null,
+                      "expression": null,
+                      "friendly_expression": null,
+                      "sort_key_position": null,
+                      "error_row_disposition": null,
+                      "truncation_row_disposition": null,
+                      "special_flags": null,
+                      "raw_properties": []
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_FIN_TXT]",
+                      "name": "FEC_FIN_TXT",
+                      "data_type": "str",
+                      "length": 10,
+                      "code_page": 1252,
+                      "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_FIN_TXT]",
+                      "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[FEC_FIN_TXT]",
+                      "source_input_lineage_id": null,
+                      "expression": null,
+                      "friendly_expression": null,
+                      "sort_key_position": null,
+                      "error_row_disposition": null,
+                      "truncation_row_disposition": null,
+                      "special_flags": null,
+                      "raw_properties": []
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[publico_objetivo]",
+                      "name": "publico_objetivo",
+                      "data_type": "wstr",
+                      "length": 1000,
+                      "code_page": null,
+                      "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[publico_objetivo]",
+                      "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[publico_objetivo]",
+                      "source_input_lineage_id": null,
+                      "expression": null,
+                      "friendly_expression": null,
+                      "sort_key_position": null,
+                      "error_row_disposition": null,
+                      "truncation_row_disposition": null,
+                      "special_flags": null,
+                      "raw_properties": []
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[DESC_SPEECH_VENTA]",
+                      "name": "DESC_SPEECH_VENTA",
+                      "data_type": "wstr",
+                      "length": 1000,
+                      "code_page": null,
+                      "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[DESC_SPEECH_VENTA]",
+                      "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[DESC_SPEECH_VENTA]",
+                      "source_input_lineage_id": null,
+                      "expression": null,
+                      "friendly_expression": null,
+                      "sort_key_position": null,
+                      "error_row_disposition": null,
+                      "truncation_row_disposition": null,
+                      "special_flags": null,
+                      "raw_properties": []
+                    }
+                  ],
+                  "external_metadata_columns": [
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[COD_CAMPANIA_DIRIGIDA]",
+                      "name": "COD_CAMPANIA_DIRIGIDA",
+                      "data_type": "i4",
+                      "length": null,
+                      "code_page": null
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[DESC_CAMPANIA_DIRIGIDA]",
+                      "name": "DESC_CAMPANIA_DIRIGIDA",
+                      "data_type": "wstr",
+                      "length": 200,
+                      "code_page": null
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[COD_ACCION_DIRIGIDA]",
+                      "name": "COD_ACCION_DIRIGIDA",
+                      "data_type": "i4",
+                      "length": null,
+                      "code_page": null
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[FEC_INICIO_TXT]",
+                      "name": "FEC_INICIO_TXT",
+                      "data_type": "str",
+                      "length": 10,
+                      "code_page": 1252
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[FEC_FIN_TXT]",
+                      "name": "FEC_FIN_TXT",
+                      "data_type": "str",
+                      "length": 10,
+                      "code_page": 1252
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[publico_objetivo]",
+                      "name": "publico_objetivo",
+                      "data_type": "wstr",
+                      "length": 1000,
+                      "code_page": null
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[DESC_SPEECH_VENTA]",
+                      "name": "DESC_SPEECH_VENTA",
+                      "data_type": "wstr",
+                      "length": 1000,
+                      "code_page": null
+                    }
+                  ]
+                }
+              ],
+              "error_outputs": [
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output]",
+                  "name": "Teradata Source Error Output",
+                  "description": null,
+                  "is_error_output": true,
+                  "is_sorted": false,
+                  "synchronous_input_id": null,
+                  "exclusion_group": null,
+                  "expression": null,
+                  "friendly_expression": null,
+                  "evaluation_order": null,
+                  "is_default_output": false,
+                  "raw_properties": [],
+                  "columns": [
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[COD_CAMPANIA_DIRIGIDA]",
+                      "name": "COD_CAMPANIA_DIRIGIDA",
+                      "data_type": "i4",
+                      "length": null,
+                      "code_page": null,
+                      "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[COD_CAMPANIA_DIRIGIDA]",
+                      "external_metadata_column_id": null,
+                      "source_input_lineage_id": null,
+                      "expression": null,
+                      "friendly_expression": null,
+                      "sort_key_position": null,
+                      "error_row_disposition": null,
+                      "truncation_row_disposition": null,
+                      "special_flags": null,
+                      "raw_properties": []
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[DESC_CAMPANIA_DIRIGIDA]",
+                      "name": "DESC_CAMPANIA_DIRIGIDA",
+                      "data_type": "wstr",
+                      "length": 200,
+                      "code_page": null,
+                      "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[DESC_CAMPANIA_DIRIGIDA]",
+                      "external_metadata_column_id": null,
+                      "source_input_lineage_id": null,
+                      "expression": null,
+                      "friendly_expression": null,
+                      "sort_key_position": null,
+                      "error_row_disposition": null,
+                      "truncation_row_disposition": null,
+                      "special_flags": null,
+                      "raw_properties": []
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[COD_ACCION_DIRIGIDA]",
+                      "name": "COD_ACCION_DIRIGIDA",
+                      "data_type": "i4",
+                      "length": null,
+                      "code_page": null,
+                      "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[COD_ACCION_DIRIGIDA]",
+                      "external_metadata_column_id": null,
+                      "source_input_lineage_id": null,
+                      "expression": null,
+                      "friendly_expression": null,
+                      "sort_key_position": null,
+                      "error_row_disposition": null,
+                      "truncation_row_disposition": null,
+                      "special_flags": null,
+                      "raw_properties": []
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[FEC_INICIO_TXT]",
+                      "name": "FEC_INICIO_TXT",
+                      "data_type": "str",
+                      "length": 10,
+                      "code_page": 1252,
+                      "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[FEC_INICIO_TXT]",
+                      "external_metadata_column_id": null,
+                      "source_input_lineage_id": null,
+                      "expression": null,
+                      "friendly_expression": null,
+                      "sort_key_position": null,
+                      "error_row_disposition": null,
+                      "truncation_row_disposition": null,
+                      "special_flags": null,
+                      "raw_properties": []
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[FEC_FIN_TXT]",
+                      "name": "FEC_FIN_TXT",
+                      "data_type": "str",
+                      "length": 10,
+                      "code_page": 1252,
+                      "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[FEC_FIN_TXT]",
+                      "external_metadata_column_id": null,
+                      "source_input_lineage_id": null,
+                      "expression": null,
+                      "friendly_expression": null,
+                      "sort_key_position": null,
+                      "error_row_disposition": null,
+                      "truncation_row_disposition": null,
+                      "special_flags": null,
+                      "raw_properties": []
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[publico_objetivo]",
+                      "name": "publico_objetivo",
+                      "data_type": "wstr",
+                      "length": 1000,
+                      "code_page": null,
+                      "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[publico_objetivo]",
+                      "external_metadata_column_id": null,
+                      "source_input_lineage_id": null,
+                      "expression": null,
+                      "friendly_expression": null,
+                      "sort_key_position": null,
+                      "error_row_disposition": null,
+                      "truncation_row_disposition": null,
+                      "special_flags": null,
+                      "raw_properties": []
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[DESC_SPEECH_VENTA]",
+                      "name": "DESC_SPEECH_VENTA",
+                      "data_type": "wstr",
+                      "length": 1000,
+                      "code_page": null,
+                      "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[DESC_SPEECH_VENTA]",
+                      "external_metadata_column_id": null,
+                      "source_input_lineage_id": null,
+                      "expression": null,
+                      "friendly_expression": null,
+                      "sort_key_position": null,
+                      "error_row_disposition": null,
+                      "truncation_row_disposition": null,
+                      "special_flags": null,
+                      "raw_properties": []
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[ErrorCode]",
+                      "name": "ErrorCode",
+                      "data_type": "i4",
+                      "length": null,
+                      "code_page": null,
+                      "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[ErrorCode]",
+                      "external_metadata_column_id": null,
+                      "source_input_lineage_id": null,
+                      "expression": null,
+                      "friendly_expression": null,
+                      "sort_key_position": null,
+                      "error_row_disposition": null,
+                      "truncation_row_disposition": null,
+                      "special_flags": "1",
+                      "raw_properties": []
+                    },
+                    {
+                      "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[ErrorColumn]",
+                      "name": "ErrorColumn",
+                      "data_type": "i4",
+                      "length": null,
+                      "code_page": null,
+                      "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[ErrorColumn]",
+                      "external_metadata_column_id": null,
+                      "source_input_lineage_id": null,
+                      "expression": null,
+                      "friendly_expression": null,
+                      "sort_key_position": null,
+                      "error_row_disposition": null,
+                      "truncation_row_disposition": null,
+                      "special_flags": "2",
+                      "raw_properties": []
+                    }
+                  ],
+                  "external_metadata_columns": []
+                }
+              ],
+              "properties": {
+                "sql_command": "SELECT\n    COD_CAMPANIA_DIRIGIDA,\n    DESC_CAMPANIA_DIRIGIDA,\n    COD_ACCION_DIRIGIDA,\n    CAST(CAST(FEC_INICIO AS DATE FORMAT 'YYYY-MM-DD') AS CHAR(10)) AS FEC_INICIO_TXT,\n\tCAST(CAST(FEC_FIN AS DATE FORMAT 'YYYY-MM-DD') AS CHAR(10)) AS FEC_FIN_TXT,\n    PUBLICO_OBJETIVO,\n    DESC_SPEECH_VENTA\nFROM D_CAMPANIAS_VIGENTES_RED",
+                "table_name": "",
+                "block_size": 1048576,
+                "access_mode": "1"
+              }
+            }
+          ],
+          "paths": [
+            {
+              "from": "Conversión de datos",
+              "to": "Destino de OLE DB",
+              "ref_id": "Package\\Tarea Flujo de datos.Paths[Salida de conversión de datos]",
+              "name": "Salida de conversión de datos",
+              "start_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de conversión de datos]",
+              "end_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB]"
+            },
+            {
+              "from": "Teradata Source",
+              "to": "Conversión de datos",
+              "ref_id": "Package\\Tarea Flujo de datos.Paths[Teradata Source Output]",
+              "name": "Teradata Source Output",
+              "start_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output]",
+              "end_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Inputs[Entrada de conversión de datos]"
+            }
+          ]
+        },
+        "parent_ref_id": null,
+        "enabled": true,
+        "effective_enabled": true,
+        "has_incoming_constraint": false,
+        "has_outgoing_constraint": false,
+        "structurally_isolated": true,
+        "is_control_flow_root": true,
+        "execution_role": "active"
+      }
+    ],
+    "precedence_constraints": []
+  },
+  "active_execution_graph": {
+    "executables": [
+      {
+        "ref_id": "Package\\Tarea Flujo de datos",
+        "name": "Tarea Flujo de datos",
+        "type": "pipeline",
+        "is_control_flow_root": true,
+        "structurally_isolated": true,
+        "data_flow_name": "Tarea Flujo de datos"
+      }
+    ],
+    "precedence_constraints": []
+  },
+  "data_flows": [
+    {
+      "name": "Tarea Flujo de datos",
+      "ref_id": "Package\\Tarea Flujo de datos",
+      "components": [
+        {
+          "name": "Conversión de datos",
+          "ref_id": "Package\\Tarea Flujo de datos\\Conversión de datos",
+          "class_id": "Microsoft.DataConvert",
+          "type": "data_conversion",
+          "version": null,
+          "description": "Conversión de datos",
+          "validate_external_metadata": null,
+          "connection": null,
+          "connections": [],
+          "raw_properties": [],
+          "inputs": [
+            {
+              "ref_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Inputs[Entrada de conversión de datos]",
+              "name": "Entrada de conversión de datos",
+              "description": null,
+              "has_side_effects": false,
+              "error_row_disposition": null,
+              "error_or_truncation_operation": null,
+              "columns": [
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Inputs[Entrada de conversión de datos].Columns[FEC_INICIO_TXT]",
+                  "name": "FEC_INICIO_TXT",
+                  "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_INICIO_TXT]",
+                  "cached_name": "FEC_INICIO_TXT",
+                  "cached_data_type": "str",
+                  "cached_length": 10,
+                  "cached_code_page": 1252,
+                  "cached_sort_key_position": null,
+                  "external_metadata_column_id": null
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Inputs[Entrada de conversión de datos].Columns[FEC_FIN_TXT]",
+                  "name": "FEC_FIN_TXT",
+                  "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_FIN_TXT]",
+                  "cached_name": "FEC_FIN_TXT",
+                  "cached_data_type": "str",
+                  "cached_length": 10,
+                  "cached_code_page": 1252,
+                  "cached_sort_key_position": null,
+                  "external_metadata_column_id": null
+                }
+              ],
+              "external_metadata_columns": []
+            }
+          ],
+          "outputs": [
+            {
+              "ref_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de conversión de datos]",
+              "name": "Salida de conversión de datos",
+              "description": null,
+              "is_error_output": false,
+              "is_sorted": false,
+              "synchronous_input_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Inputs[Entrada de conversión de datos]",
+              "exclusion_group": "1",
+              "expression": null,
+              "friendly_expression": null,
+              "evaluation_order": null,
+              "is_default_output": false,
+              "raw_properties": [],
+              "columns": [
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de conversión de datos].Columns[FechaInicio_SAL]",
+                  "name": "FechaInicio_SAL",
+                  "data_type": "dbDate",
+                  "length": null,
+                  "code_page": null,
+                  "lineage_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de conversión de datos].Columns[FechaInicio_SAL]",
+                  "external_metadata_column_id": null,
+                  "source_input_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_INICIO_TXT]",
+                  "expression": null,
+                  "friendly_expression": null,
+                  "sort_key_position": null,
+                  "error_row_disposition": "FailComponent",
+                  "truncation_row_disposition": "FailComponent",
+                  "special_flags": null,
+                  "raw_properties": [
+                    {
+                      "name": "SourceInputColumnLineageID",
+                      "value": "#{Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_INICIO_TXT]}",
+                      "data_type": "System.Int32",
+                      "description": "Especifica la columna de entrada usada como origen de datos para la conversión.",
+                      "contains_id": true,
+                      "expression_type": null,
+                      "type_converter": null,
+                      "ui_type_editor": null,
+                      "referenced_lineage_ids": [
+                        "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_INICIO_TXT]"
+                      ]
+                    },
+                    {
+                      "name": "FastParse",
+                      "value": "false",
+                      "data_type": "System.Boolean",
+                      "description": "Indica si la columna usa las rutinas de análisis más rápidas independientes de la configuración regional.",
+                      "contains_id": false,
+                      "expression_type": null,
+                      "type_converter": null,
+                      "ui_type_editor": null,
+                      "referenced_lineage_ids": []
+                    }
+                  ]
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de conversión de datos].Columns[FechaFin_SAL]",
+                  "name": "FechaFin_SAL",
+                  "data_type": "dbDate",
+                  "length": null,
+                  "code_page": null,
+                  "lineage_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de conversión de datos].Columns[FechaFin_SAL]",
+                  "external_metadata_column_id": null,
+                  "source_input_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_FIN_TXT]",
+                  "expression": null,
+                  "friendly_expression": null,
+                  "sort_key_position": null,
+                  "error_row_disposition": "FailComponent",
+                  "truncation_row_disposition": "FailComponent",
+                  "special_flags": null,
+                  "raw_properties": [
+                    {
+                      "name": "SourceInputColumnLineageID",
+                      "value": "#{Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_FIN_TXT]}",
+                      "data_type": "System.Int32",
+                      "description": "Especifica la columna de entrada usada como origen de datos para la conversión.",
+                      "contains_id": true,
+                      "expression_type": null,
+                      "type_converter": null,
+                      "ui_type_editor": null,
+                      "referenced_lineage_ids": [
+                        "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_FIN_TXT]"
+                      ]
+                    },
+                    {
+                      "name": "FastParse",
+                      "value": "false",
+                      "data_type": "System.Boolean",
+                      "description": "Indica si la columna usa las rutinas de análisis más rápidas independientes de la configuración regional.",
+                      "contains_id": false,
+                      "expression_type": null,
+                      "type_converter": null,
+                      "ui_type_editor": null,
+                      "referenced_lineage_ids": []
+                    }
+                  ]
+                }
+              ],
+              "external_metadata_columns": []
+            }
+          ],
+          "error_outputs": [
+            {
+              "ref_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de error de conversión de datos]",
+              "name": "Salida de error de conversión de datos",
+              "description": null,
+              "is_error_output": true,
+              "is_sorted": false,
+              "synchronous_input_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Inputs[Entrada de conversión de datos]",
+              "exclusion_group": "1",
+              "expression": null,
+              "friendly_expression": null,
+              "evaluation_order": null,
+              "is_default_output": false,
+              "raw_properties": [],
+              "columns": [
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de error de conversión de datos].Columns[ErrorCode]",
+                  "name": "ErrorCode",
+                  "data_type": "i4",
+                  "length": null,
+                  "code_page": null,
+                  "lineage_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de error de conversión de datos].Columns[ErrorCode]",
+                  "external_metadata_column_id": null,
+                  "source_input_lineage_id": null,
+                  "expression": null,
+                  "friendly_expression": null,
+                  "sort_key_position": null,
+                  "error_row_disposition": null,
+                  "truncation_row_disposition": null,
+                  "special_flags": "1",
+                  "raw_properties": []
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de error de conversión de datos].Columns[ErrorColumn]",
+                  "name": "ErrorColumn",
+                  "data_type": "i4",
+                  "length": null,
+                  "code_page": null,
+                  "lineage_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de error de conversión de datos].Columns[ErrorColumn]",
+                  "external_metadata_column_id": null,
+                  "source_input_lineage_id": null,
+                  "expression": null,
+                  "friendly_expression": null,
+                  "sort_key_position": null,
+                  "error_row_disposition": null,
+                  "truncation_row_disposition": null,
+                  "special_flags": "2",
+                  "raw_properties": []
+                }
+              ],
+              "external_metadata_columns": []
+            }
+          ]
+        },
+        {
+          "name": "Destino de OLE DB",
+          "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB",
+          "class_id": "Microsoft.OLEDBDestination",
+          "type": "ole_db_destination",
+          "version": "4",
+          "description": "Destino de OLE DB",
+          "validate_external_metadata": null,
+          "connection": "Project.ConnectionManagers[cnxSrvBsLogSBD01]",
+          "connections": [
+            {
+              "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Connections[OleDbConnection]",
+              "name": "OleDbConnection",
+              "connection_manager_ref_id": "Project.ConnectionManagers[cnxSrvBsLogSBD01]",
+              "connection_manager_id": "{5DA5808C-8489-48AC-8614-CB034DE02B61}:external",
+              "description": "La conexión de tiempo de ejecución OLE DB usada para obtener acceso a la base de datos."
+            }
+          ],
+          "raw_properties": [
+            {
+              "name": "CommandTimeout",
+              "value": "0",
+              "data_type": "System.Int32",
+              "description": "Número de segundos antes de que se agote el tiempo de espera de un comando. Un valor de 0 indica un tiempo de espera infinito.",
+              "contains_id": false,
+              "expression_type": null,
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "OpenRowset",
+              "value": "[dbo].[TiposCampanias]",
+              "data_type": "System.String",
+              "description": "Especifica el nombre del objeto de base de datos usado para abrir un conjunto de filas.",
+              "contains_id": false,
+              "expression_type": null,
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "OpenRowsetVariable",
+              "value": "",
+              "data_type": "System.String",
+              "description": "Especifica la variable que contiene el nombre del objeto de base de datos usado para abrir un conjunto de filas.",
+              "contains_id": false,
+              "expression_type": null,
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "SqlCommand",
+              "value": "",
+              "data_type": "System.String",
+              "description": "Comando SQL para ejecutar.",
+              "contains_id": false,
+              "expression_type": null,
+              "type_converter": null,
+              "ui_type_editor": "Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor",
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "DefaultCodePage",
+              "value": "1252",
+              "data_type": "System.Int32",
+              "description": "Especifica la página de códigos de columna para utilizar cuando la información de página de códigos no está disponible en el origen de datos.",
+              "contains_id": false,
+              "expression_type": null,
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "AlwaysUseDefaultCodePage",
+              "value": "false",
+              "data_type": "System.Boolean",
+              "description": "Fuerza el uso del valor de la propiedad DefaultCodePage al describir datos de caracteres.",
+              "contains_id": false,
+              "expression_type": null,
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "AccessMode",
+              "value": "0",
+              "data_type": "System.Int32",
+              "description": "Especifica el modo utilizado para obtener acceso a la base de datos.",
+              "contains_id": false,
+              "expression_type": null,
+              "type_converter": "AccessMode",
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "FastLoadKeepIdentity",
+              "value": "false",
+              "data_type": "System.Boolean",
+              "description": "Indica si los valores proporcionados para columnas de identidad se van a copiar al destino. Si es False, los valores de las columnas de identidad se generan automáticamente en el destino. Solo se aplica si está activada la carga rápida.",
+              "contains_id": false,
+              "expression_type": null,
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "FastLoadKeepNulls",
+              "value": "false",
+              "data_type": "System.Boolean",
+              "description": "Indica si las columnas que contienen NULL tendrán NULL insertado en el destino. Si es False, las columnas que contienen NULL tendrán sus valores predeterminados insertados en el destino. Solo se aplica si está activada la carga rápida.",
+              "contains_id": false,
+              "expression_type": null,
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "FastLoadOptions",
+              "value": "TABLOCK,CHECK_CONSTRAINTS",
+              "data_type": "System.String",
+              "description": "Especifica opciones para usar con la carga rápida. Solo se aplica si está activada la carga rápida.",
+              "contains_id": false,
+              "expression_type": null,
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "FastLoadMaxInsertCommitSize",
+              "value": "2147483647",
+              "data_type": "System.Int32",
+              "description": "Especifica cuándo se emiten confirmaciones durante la inserción de datos. El valor 0 especifica que se emitirá una confirmación al final de la inserción de datos. Solo se aplica si está activada la carga rápida.",
+              "contains_id": false,
+              "expression_type": null,
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            }
+          ],
+          "inputs": [
+            {
+              "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB]",
+              "name": "Entrada de destino de OLE DB",
+              "description": null,
+              "has_side_effects": true,
+              "error_row_disposition": "FailComponent",
+              "error_or_truncation_operation": "Insertar",
+              "columns": [
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].Columns[COD_CAMPANIA_DIRIGIDA]",
+                  "name": "COD_CAMPANIA_DIRIGIDA",
+                  "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[COD_CAMPANIA_DIRIGIDA]",
+                  "cached_name": "COD_CAMPANIA_DIRIGIDA",
+                  "cached_data_type": "i4",
+                  "cached_length": null,
+                  "cached_code_page": null,
+                  "cached_sort_key_position": null,
+                  "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[CodigoCampania]"
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].Columns[COD_ACCION_DIRIGIDA]",
+                  "name": "COD_ACCION_DIRIGIDA",
+                  "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[COD_ACCION_DIRIGIDA]",
+                  "cached_name": "COD_ACCION_DIRIGIDA",
+                  "cached_data_type": "i4",
+                  "cached_length": null,
+                  "cached_code_page": null,
+                  "cached_sort_key_position": null,
+                  "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[CodigoAccion]"
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].Columns[DESC_SPEECH_VENTA]",
+                  "name": "DESC_SPEECH_VENTA",
+                  "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[DESC_SPEECH_VENTA]",
+                  "cached_name": "DESC_SPEECH_VENTA",
+                  "cached_data_type": "wstr",
+                  "cached_length": 1000,
+                  "cached_code_page": null,
+                  "cached_sort_key_position": null,
+                  "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[Speech]"
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].Columns[publico_objetivo]",
+                  "name": "publico_objetivo",
+                  "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[publico_objetivo]",
+                  "cached_name": "publico_objetivo",
+                  "cached_data_type": "wstr",
+                  "cached_length": 1000,
+                  "cached_code_page": null,
+                  "cached_sort_key_position": null,
+                  "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[PublicoObjetivo]"
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].Columns[FechaInicio_SAL]",
+                  "name": "FechaInicio_SAL",
+                  "source_lineage_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de conversión de datos].Columns[FechaInicio_SAL]",
+                  "cached_name": "FechaInicio_SAL",
+                  "cached_data_type": "dbDate",
+                  "cached_length": null,
+                  "cached_code_page": null,
+                  "cached_sort_key_position": null,
+                  "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[FechaInicio]"
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].Columns[FechaFin_SAL]",
+                  "name": "FechaFin_SAL",
+                  "source_lineage_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de conversión de datos].Columns[FechaFin_SAL]",
+                  "cached_name": "FechaFin_SAL",
+                  "cached_data_type": "dbDate",
+                  "cached_length": null,
+                  "cached_code_page": null,
+                  "cached_sort_key_position": null,
+                  "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[FechaFin]"
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].Columns[DESC_CAMPANIA_DIRIGIDA]",
+                  "name": "DESC_CAMPANIA_DIRIGIDA",
+                  "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[DESC_CAMPANIA_DIRIGIDA]",
+                  "cached_name": "DESC_CAMPANIA_DIRIGIDA",
+                  "cached_data_type": "wstr",
+                  "cached_length": 200,
+                  "cached_code_page": null,
+                  "cached_sort_key_position": null,
+                  "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[Descripcion]"
+                }
+              ],
+              "external_metadata_columns": [
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[CodigoCampania]",
+                  "name": "CodigoCampania",
+                  "data_type": "i4",
+                  "length": null,
+                  "code_page": null
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[CodigoAccion]",
+                  "name": "CodigoAccion",
+                  "data_type": "i4",
+                  "length": null,
+                  "code_page": null
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[FechaInicio]",
+                  "name": "FechaInicio",
+                  "data_type": "wstr",
+                  "length": 27,
+                  "code_page": null
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[FechaFin]",
+                  "name": "FechaFin",
+                  "data_type": "wstr",
+                  "length": 27,
+                  "code_page": null
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[Speech]",
+                  "name": "Speech",
+                  "data_type": "wstr",
+                  "length": 1000,
+                  "code_page": null
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[Descripcion]",
+                  "name": "Descripcion",
+                  "data_type": "wstr",
+                  "length": 1000,
+                  "code_page": null
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[PublicoObjetivo]",
+                  "name": "PublicoObjetivo",
+                  "data_type": "wstr",
+                  "length": 1000,
+                  "code_page": null
+                }
+              ]
+            }
+          ],
+          "outputs": [],
+          "error_outputs": [
+            {
+              "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Outputs[Salida de error de destino de OLE DB]",
+              "name": "Salida de error de destino de OLE DB",
+              "description": null,
+              "is_error_output": true,
+              "is_sorted": false,
+              "synchronous_input_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB]",
+              "exclusion_group": "1",
+              "expression": null,
+              "friendly_expression": null,
+              "evaluation_order": null,
+              "is_default_output": false,
+              "raw_properties": [],
+              "columns": [
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Outputs[Salida de error de destino de OLE DB].Columns[ErrorCode]",
+                  "name": "ErrorCode",
+                  "data_type": "i4",
+                  "length": null,
+                  "code_page": null,
+                  "lineage_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Outputs[Salida de error de destino de OLE DB].Columns[ErrorCode]",
+                  "external_metadata_column_id": null,
+                  "source_input_lineage_id": null,
+                  "expression": null,
+                  "friendly_expression": null,
+                  "sort_key_position": null,
+                  "error_row_disposition": null,
+                  "truncation_row_disposition": null,
+                  "special_flags": "1",
+                  "raw_properties": []
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Outputs[Salida de error de destino de OLE DB].Columns[ErrorColumn]",
+                  "name": "ErrorColumn",
+                  "data_type": "i4",
+                  "length": null,
+                  "code_page": null,
+                  "lineage_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Outputs[Salida de error de destino de OLE DB].Columns[ErrorColumn]",
+                  "external_metadata_column_id": null,
+                  "source_input_lineage_id": null,
+                  "expression": null,
+                  "friendly_expression": null,
+                  "sort_key_position": null,
+                  "error_row_disposition": null,
+                  "truncation_row_disposition": null,
+                  "special_flags": "2",
+                  "raw_properties": []
+                }
+              ],
+              "external_metadata_columns": []
+            }
+          ],
+          "properties": {
+            "open_rowset": "[dbo].[TiposCampanias]",
+            "access_mode": "0",
+            "fast_load_options": "TABLOCK,CHECK_CONSTRAINTS",
+            "fast_load_max_insert_commit_size": 2147483647,
+            "sql_command": ""
+          },
+          "mappings": [
+            {
+              "source_column": "COD_CAMPANIA_DIRIGIDA",
+              "source_component": "Teradata Source",
+              "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[COD_CAMPANIA_DIRIGIDA]",
+              "pipeline_input_column": "COD_CAMPANIA_DIRIGIDA",
+              "destination_column": "CodigoCampania",
+              "destination_external_metadata_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[CodigoCampania]"
+            },
+            {
+              "source_column": "COD_ACCION_DIRIGIDA",
+              "source_component": "Teradata Source",
+              "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[COD_ACCION_DIRIGIDA]",
+              "pipeline_input_column": "COD_ACCION_DIRIGIDA",
+              "destination_column": "CodigoAccion",
+              "destination_external_metadata_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[CodigoAccion]"
+            },
+            {
+              "source_column": "DESC_SPEECH_VENTA",
+              "source_component": "Teradata Source",
+              "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[DESC_SPEECH_VENTA]",
+              "pipeline_input_column": "DESC_SPEECH_VENTA",
+              "destination_column": "Speech",
+              "destination_external_metadata_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[Speech]"
+            },
+            {
+              "source_column": "publico_objetivo",
+              "source_component": "Teradata Source",
+              "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[publico_objetivo]",
+              "pipeline_input_column": "publico_objetivo",
+              "destination_column": "PublicoObjetivo",
+              "destination_external_metadata_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[PublicoObjetivo]"
+            },
+            {
+              "source_column": "FechaInicio_SAL",
+              "source_component": "Conversión de datos",
+              "source_lineage_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de conversión de datos].Columns[FechaInicio_SAL]",
+              "pipeline_input_column": "FechaInicio_SAL",
+              "destination_column": "FechaInicio",
+              "destination_external_metadata_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[FechaInicio]"
+            },
+            {
+              "source_column": "FechaFin_SAL",
+              "source_component": "Conversión de datos",
+              "source_lineage_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de conversión de datos].Columns[FechaFin_SAL]",
+              "pipeline_input_column": "FechaFin_SAL",
+              "destination_column": "FechaFin",
+              "destination_external_metadata_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[FechaFin]"
+            },
+            {
+              "source_column": "DESC_CAMPANIA_DIRIGIDA",
+              "source_component": "Teradata Source",
+              "source_lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[DESC_CAMPANIA_DIRIGIDA]",
+              "pipeline_input_column": "DESC_CAMPANIA_DIRIGIDA",
+              "destination_column": "Descripcion",
+              "destination_external_metadata_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB].ExternalColumns[Descripcion]"
+            }
+          ]
+        },
+        {
+          "name": "Teradata Source",
+          "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source",
+          "class_id": "Microsoft.SSISTeradataSrc",
+          "type": "teradata_source",
+          "version": "1",
+          "description": "Teradata Source",
+          "validate_external_metadata": null,
+          "connection": "Project.ConnectionManagers[cnxTeradata]",
+          "connections": [
+            {
+              "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Connections[TeradataConnection]",
+              "name": "TeradataConnection",
+              "connection_manager_ref_id": "Project.ConnectionManagers[cnxTeradata]",
+              "connection_manager_id": "{29B4FDD4-193E-4D63-AC90-5C5CDA50E051}:external",
+              "description": "The Teradata runtime connection used to access the database."
+            }
+          ],
+          "raw_properties": [
+            {
+              "name": "TableName",
+              "value": "",
+              "data_type": "System.String",
+              "description": "The name of the table to be fetched.",
+              "contains_id": false,
+              "expression_type": "Notify",
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "SqlCommand",
+              "value": "SELECT\n    COD_CAMPANIA_DIRIGIDA,\n    DESC_CAMPANIA_DIRIGIDA,\n    COD_ACCION_DIRIGIDA,\n    CAST(CAST(FEC_INICIO AS DATE FORMAT 'YYYY-MM-DD') AS CHAR(10)) AS FEC_INICIO_TXT,\n\tCAST(CAST(FEC_FIN AS DATE FORMAT 'YYYY-MM-DD') AS CHAR(10)) AS FEC_FIN_TXT,\n    PUBLICO_OBJETIVO,\n    DESC_SPEECH_VENTA\nFROM D_CAMPANIAS_VIGENTES_RED",
+              "data_type": "System.String",
+              "description": "The SQL command to be executed.",
+              "contains_id": false,
+              "expression_type": "Notify",
+              "type_converter": null,
+              "ui_type_editor": "Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor, Microsoft.DataTransformationServices.Controls, Version=17.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91",
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "BlockSize",
+              "value": "1048576",
+              "data_type": "System.Int32",
+              "description": "Data transfer block size.",
+              "contains_id": false,
+              "expression_type": "Notify",
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "BufferMaxSize",
+              "value": "16775552",
+              "data_type": "System.Int32",
+              "description": "Maximum size of a data buffer when 'Buffer mode' is applied. Value must be large enough to hold at least one data row (including 8 overhead bytes per row at most).",
+              "contains_id": false,
+              "expression_type": "Notify",
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "BufferMode",
+              "value": "true",
+              "data_type": "System.Boolean",
+              "description": "Indicates which type of Load method is used. True stands for 'Progress Buffered Rows'. False indicates 'Progress Row By Row'.",
+              "contains_id": false,
+              "expression_type": "Notify",
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "DataEncryption",
+              "value": "false",
+              "data_type": "System.Boolean",
+              "description": "SQL requests and responses data encryption.",
+              "contains_id": false,
+              "expression_type": "Notify",
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "DefaultCodePage",
+              "value": "1252",
+              "data_type": "System.Int32",
+              "description": "The code page to use when code page information is unavailable from the data source.",
+              "contains_id": false,
+              "expression_type": "Notify",
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "DetailedTracingFile",
+              "value": "",
+              "data_type": "System.String",
+              "description": "A trace file name. Setting a value for this property enables TPT detailed tracing.",
+              "contains_id": false,
+              "expression_type": "Notify",
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "DetailedTracingLevel",
+              "value": "1",
+              "data_type": "System.Int32",
+              "description": "Specifies the types of diagnostic messages written by each instance of the dirver to an external log file. The diagnostic trace function provides more detailed information (including the version number) in the log file to aid in problem tracking and diagnosis.",
+              "contains_id": false,
+              "expression_type": null,
+              "type_converter": "DetailedTracingLevel",
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "DiscardLargeRow",
+              "value": "false",
+              "data_type": "System.Boolean",
+              "description": "Whether or not to discard large rows.",
+              "contains_id": false,
+              "expression_type": "Notify",
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "ExtendedStringColumnsAllocation",
+              "value": "false",
+              "data_type": "System.Boolean",
+              "description": "Use maximal character buffers allocation factor. Used when 'Export Width Table ID' = 'Maximum Defaults'.",
+              "contains_id": false,
+              "expression_type": "Notify",
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "JobMaxRowSize",
+              "value": "64",
+              "data_type": "System.Int32",
+              "description": "Maximum row size (kb) it can support in export. Valid values are: 64, 1024.",
+              "contains_id": false,
+              "expression_type": null,
+              "type_converter": "JobMaxRowSize",
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "MaxSessions",
+              "value": "8",
+              "data_type": "System.Int32",
+              "description": "Maximum number of sessions to log on.",
+              "contains_id": false,
+              "expression_type": "Notify",
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "MinSessions",
+              "value": "4",
+              "data_type": "System.Int32",
+              "description": "Minimum number of sessions required.",
+              "contains_id": false,
+              "expression_type": "Notify",
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "QueryBandSessionInfo",
+              "value": "",
+              "data_type": "System.String",
+              "description": "A user-defined query band expression.",
+              "contains_id": false,
+              "expression_type": "Notify",
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "SpoolMode",
+              "value": "0",
+              "data_type": "System.Int32",
+              "description": "Specifies whether to use spool or not while running the current Export job.",
+              "contains_id": false,
+              "expression_type": null,
+              "type_converter": "SpoolMode",
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "TenacityHours",
+              "value": "4",
+              "data_type": "System.Int32",
+              "description": "The number of hours to continue trying to log on when the maximum number of load jobs is already running on the Teradata Database.",
+              "contains_id": false,
+              "expression_type": "Notify",
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "TenacitySleep",
+              "value": "6",
+              "data_type": "System.Int32",
+              "description": "The number of minutes to pause before retrying to log on when the maximum number of load jobs is already running on the Teradata Database.",
+              "contains_id": false,
+              "expression_type": "Notify",
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "UnicodePassThrough",
+              "value": "false",
+              "data_type": "System.Boolean",
+              "description": "Whether to allow Pass Through Characters (PTCs) to be exported from Teradata.",
+              "contains_id": false,
+              "expression_type": "Notify",
+              "type_converter": null,
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            },
+            {
+              "name": "AccessMode",
+              "value": "1",
+              "data_type": "System.Int32",
+              "description": "The mode used to access the database.",
+              "contains_id": false,
+              "expression_type": null,
+              "type_converter": "AccessMode",
+              "ui_type_editor": null,
+              "referenced_lineage_ids": []
+            }
+          ],
+          "inputs": [],
+          "outputs": [
+            {
+              "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output]",
+              "name": "Teradata Source Output",
+              "description": null,
+              "is_error_output": false,
+              "is_sorted": false,
+              "synchronous_input_id": null,
+              "exclusion_group": null,
+              "expression": null,
+              "friendly_expression": null,
+              "evaluation_order": null,
+              "is_default_output": false,
+              "raw_properties": [],
+              "columns": [
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[COD_CAMPANIA_DIRIGIDA]",
+                  "name": "COD_CAMPANIA_DIRIGIDA",
+                  "data_type": "i4",
+                  "length": null,
+                  "code_page": null,
+                  "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[COD_CAMPANIA_DIRIGIDA]",
+                  "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[COD_CAMPANIA_DIRIGIDA]",
+                  "source_input_lineage_id": null,
+                  "expression": null,
+                  "friendly_expression": null,
+                  "sort_key_position": null,
+                  "error_row_disposition": null,
+                  "truncation_row_disposition": null,
+                  "special_flags": null,
+                  "raw_properties": []
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[DESC_CAMPANIA_DIRIGIDA]",
+                  "name": "DESC_CAMPANIA_DIRIGIDA",
+                  "data_type": "wstr",
+                  "length": 200,
+                  "code_page": null,
+                  "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[DESC_CAMPANIA_DIRIGIDA]",
+                  "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[DESC_CAMPANIA_DIRIGIDA]",
+                  "source_input_lineage_id": null,
+                  "expression": null,
+                  "friendly_expression": null,
+                  "sort_key_position": null,
+                  "error_row_disposition": null,
+                  "truncation_row_disposition": null,
+                  "special_flags": null,
+                  "raw_properties": []
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[COD_ACCION_DIRIGIDA]",
+                  "name": "COD_ACCION_DIRIGIDA",
+                  "data_type": "i4",
+                  "length": null,
+                  "code_page": null,
+                  "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[COD_ACCION_DIRIGIDA]",
+                  "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[COD_ACCION_DIRIGIDA]",
+                  "source_input_lineage_id": null,
+                  "expression": null,
+                  "friendly_expression": null,
+                  "sort_key_position": null,
+                  "error_row_disposition": null,
+                  "truncation_row_disposition": null,
+                  "special_flags": null,
+                  "raw_properties": []
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_INICIO_TXT]",
+                  "name": "FEC_INICIO_TXT",
+                  "data_type": "str",
+                  "length": 10,
+                  "code_page": 1252,
+                  "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_INICIO_TXT]",
+                  "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[FEC_INICIO_TXT]",
+                  "source_input_lineage_id": null,
+                  "expression": null,
+                  "friendly_expression": null,
+                  "sort_key_position": null,
+                  "error_row_disposition": null,
+                  "truncation_row_disposition": null,
+                  "special_flags": null,
+                  "raw_properties": []
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_FIN_TXT]",
+                  "name": "FEC_FIN_TXT",
+                  "data_type": "str",
+                  "length": 10,
+                  "code_page": 1252,
+                  "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[FEC_FIN_TXT]",
+                  "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[FEC_FIN_TXT]",
+                  "source_input_lineage_id": null,
+                  "expression": null,
+                  "friendly_expression": null,
+                  "sort_key_position": null,
+                  "error_row_disposition": null,
+                  "truncation_row_disposition": null,
+                  "special_flags": null,
+                  "raw_properties": []
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[publico_objetivo]",
+                  "name": "publico_objetivo",
+                  "data_type": "wstr",
+                  "length": 1000,
+                  "code_page": null,
+                  "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[publico_objetivo]",
+                  "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[publico_objetivo]",
+                  "source_input_lineage_id": null,
+                  "expression": null,
+                  "friendly_expression": null,
+                  "sort_key_position": null,
+                  "error_row_disposition": null,
+                  "truncation_row_disposition": null,
+                  "special_flags": null,
+                  "raw_properties": []
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[DESC_SPEECH_VENTA]",
+                  "name": "DESC_SPEECH_VENTA",
+                  "data_type": "wstr",
+                  "length": 1000,
+                  "code_page": null,
+                  "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].Columns[DESC_SPEECH_VENTA]",
+                  "external_metadata_column_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[DESC_SPEECH_VENTA]",
+                  "source_input_lineage_id": null,
+                  "expression": null,
+                  "friendly_expression": null,
+                  "sort_key_position": null,
+                  "error_row_disposition": null,
+                  "truncation_row_disposition": null,
+                  "special_flags": null,
+                  "raw_properties": []
+                }
+              ],
+              "external_metadata_columns": [
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[COD_CAMPANIA_DIRIGIDA]",
+                  "name": "COD_CAMPANIA_DIRIGIDA",
+                  "data_type": "i4",
+                  "length": null,
+                  "code_page": null
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[DESC_CAMPANIA_DIRIGIDA]",
+                  "name": "DESC_CAMPANIA_DIRIGIDA",
+                  "data_type": "wstr",
+                  "length": 200,
+                  "code_page": null
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[COD_ACCION_DIRIGIDA]",
+                  "name": "COD_ACCION_DIRIGIDA",
+                  "data_type": "i4",
+                  "length": null,
+                  "code_page": null
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[FEC_INICIO_TXT]",
+                  "name": "FEC_INICIO_TXT",
+                  "data_type": "str",
+                  "length": 10,
+                  "code_page": 1252
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[FEC_FIN_TXT]",
+                  "name": "FEC_FIN_TXT",
+                  "data_type": "str",
+                  "length": 10,
+                  "code_page": 1252
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[publico_objetivo]",
+                  "name": "publico_objetivo",
+                  "data_type": "wstr",
+                  "length": 1000,
+                  "code_page": null
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[DESC_SPEECH_VENTA]",
+                  "name": "DESC_SPEECH_VENTA",
+                  "data_type": "wstr",
+                  "length": 1000,
+                  "code_page": null
+                }
+              ]
+            }
+          ],
+          "error_outputs": [
+            {
+              "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output]",
+              "name": "Teradata Source Error Output",
+              "description": null,
+              "is_error_output": true,
+              "is_sorted": false,
+              "synchronous_input_id": null,
+              "exclusion_group": null,
+              "expression": null,
+              "friendly_expression": null,
+              "evaluation_order": null,
+              "is_default_output": false,
+              "raw_properties": [],
+              "columns": [
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[COD_CAMPANIA_DIRIGIDA]",
+                  "name": "COD_CAMPANIA_DIRIGIDA",
+                  "data_type": "i4",
+                  "length": null,
+                  "code_page": null,
+                  "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[COD_CAMPANIA_DIRIGIDA]",
+                  "external_metadata_column_id": null,
+                  "source_input_lineage_id": null,
+                  "expression": null,
+                  "friendly_expression": null,
+                  "sort_key_position": null,
+                  "error_row_disposition": null,
+                  "truncation_row_disposition": null,
+                  "special_flags": null,
+                  "raw_properties": []
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[DESC_CAMPANIA_DIRIGIDA]",
+                  "name": "DESC_CAMPANIA_DIRIGIDA",
+                  "data_type": "wstr",
+                  "length": 200,
+                  "code_page": null,
+                  "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[DESC_CAMPANIA_DIRIGIDA]",
+                  "external_metadata_column_id": null,
+                  "source_input_lineage_id": null,
+                  "expression": null,
+                  "friendly_expression": null,
+                  "sort_key_position": null,
+                  "error_row_disposition": null,
+                  "truncation_row_disposition": null,
+                  "special_flags": null,
+                  "raw_properties": []
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[COD_ACCION_DIRIGIDA]",
+                  "name": "COD_ACCION_DIRIGIDA",
+                  "data_type": "i4",
+                  "length": null,
+                  "code_page": null,
+                  "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[COD_ACCION_DIRIGIDA]",
+                  "external_metadata_column_id": null,
+                  "source_input_lineage_id": null,
+                  "expression": null,
+                  "friendly_expression": null,
+                  "sort_key_position": null,
+                  "error_row_disposition": null,
+                  "truncation_row_disposition": null,
+                  "special_flags": null,
+                  "raw_properties": []
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[FEC_INICIO_TXT]",
+                  "name": "FEC_INICIO_TXT",
+                  "data_type": "str",
+                  "length": 10,
+                  "code_page": 1252,
+                  "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[FEC_INICIO_TXT]",
+                  "external_metadata_column_id": null,
+                  "source_input_lineage_id": null,
+                  "expression": null,
+                  "friendly_expression": null,
+                  "sort_key_position": null,
+                  "error_row_disposition": null,
+                  "truncation_row_disposition": null,
+                  "special_flags": null,
+                  "raw_properties": []
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[FEC_FIN_TXT]",
+                  "name": "FEC_FIN_TXT",
+                  "data_type": "str",
+                  "length": 10,
+                  "code_page": 1252,
+                  "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[FEC_FIN_TXT]",
+                  "external_metadata_column_id": null,
+                  "source_input_lineage_id": null,
+                  "expression": null,
+                  "friendly_expression": null,
+                  "sort_key_position": null,
+                  "error_row_disposition": null,
+                  "truncation_row_disposition": null,
+                  "special_flags": null,
+                  "raw_properties": []
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[publico_objetivo]",
+                  "name": "publico_objetivo",
+                  "data_type": "wstr",
+                  "length": 1000,
+                  "code_page": null,
+                  "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[publico_objetivo]",
+                  "external_metadata_column_id": null,
+                  "source_input_lineage_id": null,
+                  "expression": null,
+                  "friendly_expression": null,
+                  "sort_key_position": null,
+                  "error_row_disposition": null,
+                  "truncation_row_disposition": null,
+                  "special_flags": null,
+                  "raw_properties": []
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[DESC_SPEECH_VENTA]",
+                  "name": "DESC_SPEECH_VENTA",
+                  "data_type": "wstr",
+                  "length": 1000,
+                  "code_page": null,
+                  "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[DESC_SPEECH_VENTA]",
+                  "external_metadata_column_id": null,
+                  "source_input_lineage_id": null,
+                  "expression": null,
+                  "friendly_expression": null,
+                  "sort_key_position": null,
+                  "error_row_disposition": null,
+                  "truncation_row_disposition": null,
+                  "special_flags": null,
+                  "raw_properties": []
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[ErrorCode]",
+                  "name": "ErrorCode",
+                  "data_type": "i4",
+                  "length": null,
+                  "code_page": null,
+                  "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[ErrorCode]",
+                  "external_metadata_column_id": null,
+                  "source_input_lineage_id": null,
+                  "expression": null,
+                  "friendly_expression": null,
+                  "sort_key_position": null,
+                  "error_row_disposition": null,
+                  "truncation_row_disposition": null,
+                  "special_flags": "1",
+                  "raw_properties": []
+                },
+                {
+                  "ref_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[ErrorColumn]",
+                  "name": "ErrorColumn",
+                  "data_type": "i4",
+                  "length": null,
+                  "code_page": null,
+                  "lineage_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Error Output].Columns[ErrorColumn]",
+                  "external_metadata_column_id": null,
+                  "source_input_lineage_id": null,
+                  "expression": null,
+                  "friendly_expression": null,
+                  "sort_key_position": null,
+                  "error_row_disposition": null,
+                  "truncation_row_disposition": null,
+                  "special_flags": "2",
+                  "raw_properties": []
+                }
+              ],
+              "external_metadata_columns": []
+            }
+          ],
+          "properties": {
+            "sql_command": "SELECT\n    COD_CAMPANIA_DIRIGIDA,\n    DESC_CAMPANIA_DIRIGIDA,\n    COD_ACCION_DIRIGIDA,\n    CAST(CAST(FEC_INICIO AS DATE FORMAT 'YYYY-MM-DD') AS CHAR(10)) AS FEC_INICIO_TXT,\n\tCAST(CAST(FEC_FIN AS DATE FORMAT 'YYYY-MM-DD') AS CHAR(10)) AS FEC_FIN_TXT,\n    PUBLICO_OBJETIVO,\n    DESC_SPEECH_VENTA\nFROM D_CAMPANIAS_VIGENTES_RED",
+            "table_name": "",
+            "block_size": 1048576,
+            "access_mode": "1"
+          }
+        }
+      ],
+      "paths": [
+        {
+          "from": "Conversión de datos",
+          "to": "Destino de OLE DB",
+          "ref_id": "Package\\Tarea Flujo de datos.Paths[Salida de conversión de datos]",
+          "name": "Salida de conversión de datos",
+          "start_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Outputs[Salida de conversión de datos]",
+          "end_id": "Package\\Tarea Flujo de datos\\Destino de OLE DB.Inputs[Entrada de destino de OLE DB]"
+        },
+        {
+          "from": "Teradata Source",
+          "to": "Conversión de datos",
+          "ref_id": "Package\\Tarea Flujo de datos.Paths[Teradata Source Output]",
+          "name": "Teradata Source Output",
+          "start_id": "Package\\Tarea Flujo de datos\\Teradata Source.Outputs[Teradata Source Output]",
+          "end_id": "Package\\Tarea Flujo de datos\\Conversión de datos.Inputs[Entrada de conversión de datos]"
+        }
+      ]
+    }
+  ]
+}

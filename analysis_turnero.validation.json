@@ -1,0 +1,15 @@
+{
+  "valid": true,
+  "errors": [],
+  "warnings": [
+    {
+      "code": "structurally_isolated_executable",
+      "message": "Executable 'Tarea Flujo de datos' no participa de ningun PrecedenceConstraint de su nivel. Puede representar una raiz independiente del Control Flow, no necesariamente codigo muerto.",
+      "context": {
+        "container": "Package",
+        "executable": "Tarea Flujo de datos",
+        "effective_enabled": false
+      }
+    }
+  ]
+}
