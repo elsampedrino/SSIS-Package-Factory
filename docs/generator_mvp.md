@@ -6,6 +6,15 @@ resultado real de la implementación. Alcance: exclusivamente el caso simple
 de Campanias (Teradata Source → Data Conversion → OLE DB Destination).
 Turnero queda fuera a propósito.
 
+> **Nota de actualización (project-context-v1)**: todo lo que este
+> documento describe abajo sobre `KNOWN_CONNECTION_MANAGERS`
+> (diccionario hardcodeado de GUID) refleja el diseño ORIGINAL de este
+> milestone, ya **reemplazado**. Ese diccionario fue eliminado del código;
+> la resolución de `connectionManagerID` ahora pasa siempre por un
+> `ProjectContext` real (`project_context/`). Ver `docs/project_context.md`,
+> sección 6, para el detalle de la migración. Se conserva el texto original
+> abajo como registro histórico de la decisión de diseño inicial.
+
 ## 🏁 MILESTONE — Generator MVP Campanias E2E
 
 **STATUS: VALIDATED END-TO-END IN REAL SSIS / SSDT.**

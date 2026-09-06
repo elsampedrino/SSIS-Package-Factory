@@ -52,41 +52,26 @@ def new_guid() -> str:
 
 
 # ---------------------------------------------------------------------------
-# Connection Managers conocidos — ver docs/generator_mvp.md seccion 3.
+# Connection Managers — ver docs/project_context.md.
 #
-# Estos GUID son REALES, observados en templates/campanias_base.dtsx (que a
-# su vez es una copia de un paquete real y validado del proyecto). NO son
-# inventados. Limitados al mismo proyecto SSIS que el paquete de referencia.
+# HISTORIAL: hasta project-context-v1 esta seccion tenia un diccionario
+# hardcodeado (KNOWN_CONNECTION_MANAGERS) con los 2 GUID de Campanias,
+# copiados a mano del template. Se eliminó: el DTSID real de un Connection
+# Manager ahora se resuelve consultando un ProjectContext (ver
+# project_context.validator.get_connection_dtsid), construido a partir de
+# los archivos reales del proyecto (.dtproj/.conmgr/Project.params). Lo
+# único que sigue siendo responsabilidad de este módulo es el FORMATO del
+# atributo XML, que es genérico y no depende de qué proyecto sea.
 # ---------------------------------------------------------------------------
-KNOWN_CONNECTION_MANAGERS = {
-    "cnxTeradata": "{29B4FDD4-193E-4D63-AC90-5C5CDA50E051}",
-    "cnxSrvBsLogSBD01": "{5DA5808C-8489-48AC-8614-CB034DE02B61}",
-}
-
-
-class UnknownConnectionManagerError(Exception):
-    """El process_spec pidio un Connection Manager que no se puede mapear
-    inequivocamente a un GUID conocido del template."""
-
-
-def resolve_connection_manager_id(name: str) -> str:
+def format_connection_manager_id(dtsid: str) -> str:
     """
-    Devuelve el connectionManagerID completo ('{GUID}:external') para un
-    nombre de Connection Manager conocido. Si el nombre no esta en
-    KNOWN_CONNECTION_MANAGERS, falla explicitamente — NUNCA reutiliza el GUID
-    de un nombre distinto ni asume una correspondencia por posicion/orden.
+    'connectionManagerID' completo ('{GUID}:external') a partir del DTSID
+    real de un Connection Manager de proyecto. El DTSID se resuelve por
+    fuera de este módulo (ver project_context.validator.get_connection_dtsid)
+    — esta función solo aplica el formato ya observado en el XML real,
+    nunca busca ni inventa un GUID.
     """
-    guid = KNOWN_CONNECTION_MANAGERS.get(name)
-    if guid is None:
-        known = ", ".join(sorted(KNOWN_CONNECTION_MANAGERS)) or "(ninguno)"
-        raise UnknownConnectionManagerError(
-            f"Connection Manager '{name}' no reconocido por este template. "
-            f"Connection Managers soportados: {known}. "
-            "No se puede generar el paquete sin un GUID real conocido: "
-            "agregalo a KNOWN_CONNECTION_MANAGERS solo si corresponde al "
-            "mismo proyecto SSIS (ver docs/generator_mvp.md, seccion 3)."
-        )
-    return f"{guid}:external"
+    return f"{dtsid}:external"
 
 
 def connection_manager_ref_id(name: str) -> str:

@@ -5,6 +5,20 @@ Validacion fail-fast de un process_spec, ANTES de tocar el template XML.
 Separado del generador propiamente dicho (mismo criterio de separacion de
 responsabilidades que ssis_parser.py / ssis_validator.py).
 
+Desde project-context-v1, la validacion de "conexiones soportadas" ya NO
+depende de un diccionario hardcodeado: consulta un ProjectContext real (ver
+project_context/context_builder.py), que refleja el proyecto SSIS al que el
+paquete generado se va a agregar. Esto separa dos preocupaciones distintas:
+
+    - Project Context validation (project_context.validator.validate_project_context):
+      salud GENERAL del proyecto (ej. un .conmgr referenciado que falta en
+      disco pero que ningun paquete usa todavia).
+    - Spec / Generator validation (este modulo): si LOS RECURSOS QUE ESTE
+      SPEC PARTICULAR necesita (una conexion por nombre, con un provider
+      esperado) existen y son utilizables. Un .conmgr faltante que Campanias
+      no usa (ej. cnxSrvTurnosDb.conmgr) no debe bloquear la generacion de
+      Campanias -- solo bloquea si el spec pide justamente esa conexion.
+
 validate_spec() intenta juntar TODOS los problemas en una sola pasada (en vez
 de abortar en el primer error) para que quien escribe el spec vea de una vez
 toda la lista de correcciones necesarias — sigue siendo "fail-fast" en el
@@ -16,13 +30,17 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from .xml_helpers import KNOWN_CONNECTION_MANAGERS
-
 SUPPORTED_SOURCE_TYPE = "teradata"
 SUPPORTED_DESTINATION_TYPE = "ole_db"
 SUPPORTED_TRANSFORMATION_TYPE = "data_conversion"
 STRING_DATA_TYPES = {"str", "wstr"}
 NON_UNICODE_STRING_TYPE = "str"
+
+# Provider esperado para cada rol, segun el unico tipo de source/destination
+# que este MVP sabe escribir (Microsoft.SSISTeradataSrc / Microsoft.OLEDBDestination).
+# No es una propiedad del ProjectContext -- es una regla de ESTE generador.
+EXPECTED_SOURCE_PROVIDER = "TERADATA"
+EXPECTED_DESTINATION_PROVIDER = "OLEDB"
 
 
 class SpecValidationError(Exception):
@@ -45,13 +63,61 @@ def _positive_int(value: Any) -> bool:
     return isinstance(value, int) and not isinstance(value, bool) and value > 0
 
 
-def validate_spec(spec: Dict[str, Any]) -> List[str]:
-    """Devuelve la lista de errores encontrados (vacia si el spec es valido).
-    No lanza excepcion — ver assert_valid_spec() para la version que si."""
+def _validate_connection_reference(
+    label: str,
+    connection_name: str,
+    expected_provider: str,
+    project_connections: Dict[str, Any],
+) -> List[str]:
+    """
+    Valida que connection_name exista en el ProjectContext y que su provider
+    sea el esperado para ese rol (TERADATA para source, OLEDB para
+    destination en este MVP). Dos errores distintos y reconocibles por
+    separado: "no existe" vs "existe pero es de otro provider" -- no se
+    colapsan en un solo mensaje generico.
+    """
+    conn = project_connections.get(connection_name)
+    if conn is None:
+        known = sorted(project_connections) or ["(ninguna)"]
+        return [
+            f"{label} = {connection_name!r} no existe en el ProjectContext del "
+            f"proyecto. Connection Managers disponibles: {known}."
+        ]
+
+    provider = conn.get("provider")
+    if provider != expected_provider:
+        return [
+            f"{label} = {connection_name!r} existe en el ProjectContext, pero su "
+            f"provider es {provider!r} (se esperaba {expected_provider!r} para este rol)."
+        ]
+
+    return []
+
+
+def validate_spec(spec: Dict[str, Any], project_context: Dict[str, Any]) -> List[str]:
+    """
+    Devuelve la lista de errores encontrados (vacia si el spec es valido).
+    No lanza excepcion — ver assert_valid_spec() para la version que si.
+
+    project_context es OBLIGATORIO: el resultado de
+    project_context.context_builder.build_project_context(...) para el
+    proyecto SSIS al que este paquete se va a agregar. Se usa para resolver
+    y validar 'source.connection'/'destination.connection' por nombre --
+    ver EXPECTED_SOURCE_PROVIDER/EXPECTED_DESTINATION_PROVIDER.
+    """
     errors: List[str] = []
 
     if not isinstance(spec, dict):
         return ["El process_spec debe ser un objeto JSON (dict)."]
+
+    if not isinstance(project_context, dict):
+        errors.append(
+            "Falta 'project_context' (debe ser el dict devuelto por "
+            "project_context.context_builder.build_project_context(...))."
+        )
+        project_connections: Dict[str, Any] = {}
+    else:
+        project_connections = project_context.get("connections", {})
 
     package = spec.get("package")
     if not isinstance(package, dict):
@@ -87,11 +153,14 @@ def validate_spec(spec: Dict[str, Any]) -> List[str]:
             errors.append("'data_flow.source.name' es obligatorio y no puede estar vacio.")
         if not _non_empty_str(source.get("connection")):
             errors.append("'data_flow.source.connection' es obligatorio y no puede estar vacio.")
-        elif source["connection"] not in KNOWN_CONNECTION_MANAGERS:
-            errors.append(
-                f"'data_flow.source.connection' = {source['connection']!r} no es un "
-                f"Connection Manager soportado por el template. Soportados: "
-                f"{sorted(KNOWN_CONNECTION_MANAGERS)}."
+        else:
+            errors.extend(
+                _validate_connection_reference(
+                    label="data_flow.source.connection",
+                    connection_name=source["connection"],
+                    expected_provider=EXPECTED_SOURCE_PROVIDER,
+                    project_connections=project_connections,
+                )
             )
         if not _non_empty_str(source.get("sql")):
             errors.append("'data_flow.source.sql' es obligatorio y no puede estar vacio.")
@@ -223,11 +292,14 @@ def validate_spec(spec: Dict[str, Any]) -> List[str]:
             errors.append(
                 "'data_flow.destination.connection' es obligatorio y no puede estar vacio."
             )
-        elif destination["connection"] not in KNOWN_CONNECTION_MANAGERS:
-            errors.append(
-                f"'data_flow.destination.connection' = {destination['connection']!r} no es "
-                f"un Connection Manager soportado por el template. Soportados: "
-                f"{sorted(KNOWN_CONNECTION_MANAGERS)}."
+        else:
+            errors.extend(
+                _validate_connection_reference(
+                    label="data_flow.destination.connection",
+                    connection_name=destination["connection"],
+                    expected_provider=EXPECTED_DESTINATION_PROVIDER,
+                    project_connections=project_connections,
+                )
             )
         if not _non_empty_str(destination.get("table")):
             errors.append("'data_flow.destination.table' es obligatorio y no puede estar vacio.")
@@ -275,10 +347,10 @@ def validate_spec(spec: Dict[str, Any]) -> List[str]:
     return errors
 
 
-def assert_valid_spec(spec: Dict[str, Any]) -> None:
+def assert_valid_spec(spec: Dict[str, Any], project_context: Dict[str, Any]) -> None:
     """Como validate_spec(), pero lanza SpecValidationError si hay errores.
     Debe llamarse ANTES de tocar el template — el generador nunca modifica
     XML con un spec invalido."""
-    errors = validate_spec(spec)
+    errors = validate_spec(spec, project_context)
     if errors:
         raise SpecValidationError(errors)

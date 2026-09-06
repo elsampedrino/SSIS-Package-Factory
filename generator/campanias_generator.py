@@ -26,6 +26,8 @@ import re
 import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Optional
 
+from project_context.validator import get_connection_dtsid
+
 from .spec_validator import assert_valid_spec
 from .xml_helpers import (
     NS,
@@ -34,6 +36,7 @@ from .xml_helpers import (
     dataflow_executable_ref,
     dts,
     component_ref,
+    format_connection_manager_id,
     id_reference_wrapper,
     input_column_ref,
     input_external_column_ref,
@@ -43,7 +46,6 @@ from .xml_helpers import (
     output_external_column_ref,
     output_ref,
     path_ref,
-    resolve_connection_manager_id,
 )
 
 # componentClassID: duplicados a proposito de COMPONENT_TYPE_MAP de
@@ -122,6 +124,27 @@ def _set_property_text(properties_el: ET.Element, name: str, value: str) -> None
 def _clear_children(parent_el: ET.Element, tag: str) -> None:
     for child in list(parent_el.findall(tag)):
         parent_el.remove(child)
+
+
+def _resolve_connection_manager_id(project_context: Dict[str, Any], name: str) -> str:
+    """
+    connectionManagerID completo ('{GUID}:external') para un Connection
+    Manager de proyecto, resuelto vía ProjectContext (ver
+    project_context.validator.get_connection_dtsid) en vez del diccionario
+    hardcodeado que este módulo usaba antes de project-context-v1.
+
+    spec_validator.assert_valid_spec() ya debería haber confirmado que
+    'name' existe en project_context — si igual falla acá, es una
+    inconsistencia interna, no un problema del spec del usuario.
+    """
+    try:
+        dtsid = get_connection_dtsid(project_context, name)
+    except KeyError as exc:
+        raise GeneratorError(
+            f"Connection Manager '{name}' no se pudo resolver en ProjectContext "
+            "(deberia haber sido detectado por spec_validator)."
+        ) from exc
+    return format_connection_manager_id(dtsid)
 
 
 # ---------------------------------------------------------------------------
@@ -247,9 +270,12 @@ def _rewrite_design_time_properties(text: str, ref_id_map: Dict[str, str]) -> st
 # ---------------------------------------------------------------------------
 # Generacion
 # ---------------------------------------------------------------------------
-def build_package_tree(spec: Dict[str, Any], template_path: str) -> ET.Element:
+def build_package_tree(
+    spec: Dict[str, Any], project_context: Dict[str, Any], template_path: str
+) -> ET.Element:
     """Construye el arbol XML completo del paquete generado. No escribe a
-    disco (ver generate() para eso). Asume que el spec YA fue validado."""
+    disco (ver generate() para eso). Asume que el spec YA fue validado
+    contra project_context (ver generate())."""
     package_name = spec["package"]["name"]
     data_flow = spec["data_flow"]
     data_flow_name = data_flow["name"]
@@ -289,12 +315,19 @@ def build_package_tree(spec: Dict[str, Any], template_path: str) -> ET.Element:
     # completa a medida que se generan Teradata Source y Data Conversion.
     pipeline_columns: Dict[str, Dict[str, Any]] = {}
 
-    _build_teradata_source(teradata_el, data_flow_name, source_name, source_spec, pipeline_columns)
+    _build_teradata_source(
+        teradata_el, data_flow_name, source_name, source_spec, pipeline_columns, project_context
+    )
     _build_data_conversion(
         conversion_el, data_flow_name, conversion_name, transform_spec, pipeline_columns
     )
     _build_ole_db_destination(
-        destination_el, data_flow_name, destination_name, destination_spec, pipeline_columns
+        destination_el,
+        data_flow_name,
+        destination_name,
+        destination_spec,
+        pipeline_columns,
+        project_context,
     )
 
     _rebuild_paths(
@@ -322,6 +355,7 @@ def _build_teradata_source(
     name: str,
     spec: Dict[str, Any],
     pipeline_columns: Dict[str, Dict[str, Any]],
+    project_context: Dict[str, Any],
 ) -> None:
     component_el.set("refId", component_ref(data_flow, name))
     component_el.set("name", name)
@@ -332,7 +366,9 @@ def _build_teradata_source(
 
     connection_el = component_el.find("connections/connection")
     connection_el.set("refId", connection_ref(data_flow, name, SOURCE_CONNECTION_LOCAL_NAME))
-    connection_el.set("connectionManagerID", resolve_connection_manager_id(spec["connection"]))
+    connection_el.set(
+        "connectionManagerID", _resolve_connection_manager_id(project_context, spec["connection"])
+    )
     connection_el.set("connectionManagerRefId", connection_manager_ref_id(spec["connection"]))
 
     outputs_el = component_el.find("outputs")
@@ -495,6 +531,7 @@ def _build_ole_db_destination(
     name: str,
     spec: Dict[str, Any],
     pipeline_columns: Dict[str, Dict[str, Any]],
+    project_context: Dict[str, Any],
 ) -> None:
     component_el.set("refId", component_ref(data_flow, name))
     component_el.set("name", name)
@@ -507,7 +544,9 @@ def _build_ole_db_destination(
     connection_el.set(
         "refId", connection_ref(data_flow, name, DESTINATION_CONNECTION_LOCAL_NAME)
     )
-    connection_el.set("connectionManagerID", resolve_connection_manager_id(spec["connection"]))
+    connection_el.set(
+        "connectionManagerID", _resolve_connection_manager_id(project_context, spec["connection"])
+    )
     connection_el.set("connectionManagerRefId", connection_manager_ref_id(spec["connection"]))
 
     input_el = component_el.find("inputs/input")
@@ -613,15 +652,28 @@ def _update_design_time_properties(
     dtp_el.text = _rewrite_design_time_properties(dtp_el.text, ref_id_map)
 
 
-def generate(spec: Dict[str, Any], template_path: str, output_path: str) -> None:
+def generate(
+    spec: Dict[str, Any],
+    project_context: Dict[str, Any],
+    template_path: str,
+    output_path: str,
+) -> None:
     """
-    Punto de entrada del generador. Valida el spec (fail-fast, antes de tocar
-    el template), construye el arbol y lo escribe en output_path.
+    Punto de entrada del generador. Valida el spec contra project_context
+    (fail-fast, antes de tocar el template), construye el arbol y lo escribe
+    en output_path.
+
+    project_context: dict devuelto por
+    project_context.context_builder.build_project_context(...) para el
+    proyecto SSIS real al que este paquete se va a agregar (Modo A — ver
+    docs/project_context.md). Define QUÉ Connection Managers existen y con
+    qué provider; el spec los referencia por nombre
+    ('source.connection'/'destination.connection') y nunca por GUID.
     """
-    assert_valid_spec(spec)
+    assert_valid_spec(spec, project_context)
 
     ET.register_namespace("DTS", NS["DTS"])
 
-    root = build_package_tree(spec, template_path)
+    root = build_package_tree(spec, project_context, template_path)
     ET.indent(root, space="  ")
     ET.ElementTree(root).write(output_path, encoding="utf-8", xml_declaration=True)

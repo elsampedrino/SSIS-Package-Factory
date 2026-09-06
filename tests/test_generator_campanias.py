@@ -1,12 +1,16 @@
 """
 Tests del Generador MVP (solo Campanias). Cubren:
 
-- Nivel 1 de validacion end-to-end: process_spec -> generate() ->
-  CampaniasGenerado.dtsx -> ssis_parser -> ssis_validator -> 0 errores y
-  equivalencia funcional contra el spec (no se exige igualdad de GUIDs).
+- Nivel 1 de validacion end-to-end: process_spec + ProjectContext ->
+  generate() -> CampaniasGenerado.dtsx -> ssis_parser -> ssis_validator ->
+  0 errores y equivalencia funcional contra el spec (no se exige igualdad
+  de GUIDs).
 - Que las reglas de validacion fail-fast de spec_validator.py efectivamente
   rechazan specs invalidos ANTES de tocar el template (ningun archivo se
   escribe cuando la validacion falla).
+- project-context-v1: que la resolucion de Connection Managers (DTSID por
+  nombre) venga del ProjectContext real del proyecto BipSuc, no de un
+  diccionario hardcodeado (KNOWN_CONNECTION_MANAGERS ya no existe).
 """
 
 import copy
@@ -23,10 +27,23 @@ import ssis_parser
 import ssis_validator
 from generator.campanias_generator import generate
 from generator.spec_validator import SpecValidationError, validate_spec
+from project_context.context_builder import build_project_context
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEMPLATE_PATH = os.path.join(REPO_ROOT, "templates", "campanias_base.dtsx")
 SPEC_PATH = os.path.join(REPO_ROOT, "specs", "campanias_generated.json")
+FIXTURES_DIR = os.path.join(REPO_ROOT, "Examples", "Originals")
+DTPROJ_PATH = os.path.join(FIXTURES_DIR, "BipSuc.dtproj")
+PARAMS_PATH = os.path.join(FIXTURES_DIR, "Project.params")
+
+# ProjectContext REAL del proyecto BipSuc -- construido una sola vez, a
+# partir de los mismos fixtures que tests/test_project_context.py. Esto es
+# el corazon de la integracion: el generador ya no conoce ningun GUID de
+# antemano, los resuelve todos consultando esto.
+PROJECT_CONTEXT = build_project_context(DTPROJ_PATH, PARAMS_PATH, FIXTURES_DIR)
+
+EXPECTED_TERADATA_DTSID = "{29B4FDD4-193E-4D63-AC90-5C5CDA50E051}"
+EXPECTED_OLEDB_DTSID = "{5DA5808C-8489-48AC-8614-CB034DE02B61}"
 
 
 def _load_spec():
@@ -35,7 +52,7 @@ def _load_spec():
 
 
 class GeneratorEndToEndTests(unittest.TestCase):
-    """process_spec -> generator -> .dtsx -> ssis_parser -> ssis_validator."""
+    """process_spec + ProjectContext -> generator -> .dtsx -> ssis_parser -> ssis_validator."""
 
     @classmethod
     def setUpClass(cls):
@@ -43,7 +60,7 @@ class GeneratorEndToEndTests(unittest.TestCase):
         cls.tmp_dir = tempfile.mkdtemp(prefix="ssis_generator_test_")
         cls.output_path = os.path.join(cls.tmp_dir, "CampaniasGenerado.dtsx")
 
-        generate(cls.spec, TEMPLATE_PATH, cls.output_path)
+        generate(cls.spec, PROJECT_CONTEXT, TEMPLATE_PATH, cls.output_path)
 
         cls.ir = ssis_parser.parse_file(cls.output_path)
         cls.validation = ssis_validator.validate_ir(cls.ir)
@@ -55,7 +72,7 @@ class GeneratorEndToEndTests(unittest.TestCase):
         shutil.rmtree(cls.tmp_dir, ignore_errors=True)
 
     def test_spec_itself_is_valid(self):
-        self.assertEqual(validate_spec(self.spec), [])
+        self.assertEqual(validate_spec(self.spec, PROJECT_CONTEXT), [])
 
     def test_ir_validates_without_errors(self):
         self.assertEqual(self.validation["errors"], [])
@@ -143,6 +160,113 @@ class GeneratorEndToEndTests(unittest.TestCase):
         self.assertIsNotNone(self.ir["package_dtsid"])
 
 
+class ProjectContextIntegrationTests(unittest.TestCase):
+    """project-context-v1: los Connection Managers que usa Campanias se
+    resuelven desde el ProjectContext real de BipSuc, no desde un
+    diccionario hardcodeado (que ya no existe en el codigo)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.spec = _load_spec()
+        cls.tmp_dir = tempfile.mkdtemp(prefix="ssis_generator_pc_test_")
+        cls.output_path = os.path.join(cls.tmp_dir, "CampaniasGenerado.dtsx")
+        generate(cls.spec, PROJECT_CONTEXT, TEMPLATE_PATH, cls.output_path)
+        cls.ir = ssis_parser.parse_file(cls.output_path)
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.tmp_dir, ignore_errors=True)
+
+    def _connection_manager_id_of(self, component_type):
+        component = next(
+            c for c in self.ir["data_flows"][0]["components"] if c["type"] == component_type
+        )
+        conn = component["connections"][0]
+        return conn["connection_manager_id"]
+
+    def test_campanias_resolves_cnxteradata_from_project_context(self):
+        # 1. Campanias resuelve cnxTeradata desde ProjectContext.
+        self.assertIn("cnxTeradata", PROJECT_CONTEXT["connections"])
+
+    def test_campanias_resolves_cnxsrvbslogsbd01_from_project_context(self):
+        # 2. Campanias resuelve cnxSrvBsLogSBD01 desde ProjectContext.
+        self.assertIn("cnxSrvBsLogSBD01", PROJECT_CONTEXT["connections"])
+
+    def test_generated_dtsids_match_expected_real_guids(self):
+        # 3. Los DTSID resultantes en el .dtsx generado coinciden con los
+        # DTSID reales de los .conmgr del proyecto (no con un valor inventado).
+        self.assertEqual(
+            self._connection_manager_id_of("teradata_source"),
+            f"{EXPECTED_TERADATA_DTSID}:external",
+        )
+        self.assertEqual(
+            self._connection_manager_id_of("ole_db_destination"),
+            f"{EXPECTED_OLEDB_DTSID}:external",
+        )
+
+    def test_error_if_source_connection_missing_from_project_context(self):
+        # 4. Error claro si falta la source connection.
+        spec = copy.deepcopy(self.spec)
+        spec["data_flow"]["source"]["connection"] = "cnxNoExisteEnElProyecto"
+        output_path = os.path.join(self.tmp_dir, "should_not_exist_1.dtsx")
+        with self.assertRaises(SpecValidationError) as ctx:
+            generate(spec, PROJECT_CONTEXT, TEMPLATE_PATH, output_path)
+        self.assertIn("no existe en el ProjectContext", str(ctx.exception))
+        self.assertFalse(os.path.exists(output_path))
+
+    def test_error_if_destination_connection_missing_from_project_context(self):
+        # 5. Error claro si falta la destination connection.
+        spec = copy.deepcopy(self.spec)
+        spec["data_flow"]["destination"]["connection"] = "cnxNoExisteEnElProyecto"
+        output_path = os.path.join(self.tmp_dir, "should_not_exist_2.dtsx")
+        with self.assertRaises(SpecValidationError) as ctx:
+            generate(spec, PROJECT_CONTEXT, TEMPLATE_PATH, output_path)
+        self.assertIn("no existe en el ProjectContext", str(ctx.exception))
+        self.assertFalse(os.path.exists(output_path))
+
+    def test_error_if_source_provider_is_not_teradata(self):
+        # 6. Error si el provider del source no es TERADATA.
+        # cnxSrvBsLogSBD01 existe en el ProjectContext, pero es OLEDB.
+        spec = copy.deepcopy(self.spec)
+        spec["data_flow"]["source"]["connection"] = "cnxSrvBsLogSBD01"
+        output_path = os.path.join(self.tmp_dir, "should_not_exist_3.dtsx")
+        with self.assertRaises(SpecValidationError) as ctx:
+            generate(spec, PROJECT_CONTEXT, TEMPLATE_PATH, output_path)
+        message = str(ctx.exception)
+        self.assertIn("se esperaba 'TERADATA'", message)
+        self.assertFalse(os.path.exists(output_path))
+
+    def test_error_if_destination_provider_is_not_oledb(self):
+        # 7. Error si el provider del destination no es OLEDB.
+        # cnxTeradata existe en el ProjectContext, pero es TERADATA.
+        spec = copy.deepcopy(self.spec)
+        spec["data_flow"]["destination"]["connection"] = "cnxTeradata"
+        output_path = os.path.join(self.tmp_dir, "should_not_exist_4.dtsx")
+        with self.assertRaises(SpecValidationError) as ctx:
+            generate(spec, PROJECT_CONTEXT, TEMPLATE_PATH, output_path)
+        message = str(ctx.exception)
+        self.assertIn("se esperaba 'OLEDB'", message)
+        self.assertFalse(os.path.exists(output_path))
+
+    def test_does_not_depend_on_known_connection_managers_dict(self):
+        # 8. No depender de KNOWN_CONNECTION_MANAGERS -- ya no existe en el
+        # modulo. Este test falla con AttributeError/ImportError si alguien
+        # lo reintroduce sin querer.
+        import generator.xml_helpers as xml_helpers
+
+        self.assertFalse(hasattr(xml_helpers, "KNOWN_CONNECTION_MANAGERS"))
+        self.assertFalse(hasattr(xml_helpers, "resolve_connection_manager_id"))
+        self.assertFalse(hasattr(xml_helpers, "UnknownConnectionManagerError"))
+
+    def test_missing_project_context_is_rejected_explicitly(self):
+        spec = copy.deepcopy(self.spec)
+        output_path = os.path.join(self.tmp_dir, "should_not_exist_5.dtsx")
+        with self.assertRaises(SpecValidationError) as ctx:
+            generate(spec, None, TEMPLATE_PATH, output_path)
+        self.assertIn("Falta 'project_context'", str(ctx.exception))
+        self.assertFalse(os.path.exists(output_path))
+
+
 class GeneratorRenamedTopologyTests(unittest.TestCase):
     """El generador debe funcionar igual de bien si el spec usa nombres
     distintos a los del template (no debe depender de los nombres originales
@@ -155,7 +279,7 @@ class GeneratorRenamedTopologyTests(unittest.TestCase):
         cls.spec["data_flow"]["destination"]["name"] = "Destino Renombrado"
         cls.tmp_dir = tempfile.mkdtemp(prefix="ssis_generator_test_renamed_")
         cls.output_path = os.path.join(cls.tmp_dir, "Renamed.dtsx")
-        generate(cls.spec, TEMPLATE_PATH, cls.output_path)
+        generate(cls.spec, PROJECT_CONTEXT, TEMPLATE_PATH, cls.output_path)
         cls.ir = ssis_parser.parse_file(cls.output_path)
         cls.validation = ssis_validator.validate_ir(cls.ir)
 
@@ -200,7 +324,7 @@ class SpecValidationFailFastTests(unittest.TestCase):
 
     def _assert_rejected_and_no_file_written(self, spec):
         with self.assertRaises(SpecValidationError):
-            generate(spec, TEMPLATE_PATH, self.output_path)
+            generate(spec, PROJECT_CONTEXT, TEMPLATE_PATH, self.output_path)
         self.assertFalse(os.path.exists(self.output_path))
 
     def test_source_type_must_be_teradata(self):

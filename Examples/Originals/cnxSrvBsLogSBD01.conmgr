@@ -1,0 +1,25 @@
+﻿<?xml version="1.0"?>
+<DTS:ConnectionManager xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:ObjectName="cnxSrvBsLogSBD01"
+  DTS:DTSID="{5DA5808C-8489-48AC-8614-CB034DE02B61}"
+  DTS:CreationName="OLEDB">
+  <DTS:PropertyExpression
+    DTS:Name="InitialCatalog">@[$Project::ambiente] == "QA" ? "Optimus" : "Migas"</DTS:PropertyExpression>
+  <DTS:PropertyExpression
+    DTS:Name="Password">@[$Project::pwSrvBsLogSBD01]</DTS:PropertyExpression>
+  <DTS:PropertyExpression
+    DTS:Name="ServerName">@[$Project::srvBsLogSBD01]</DTS:PropertyExpression>
+  <DTS:ObjectData>
+    <DTS:ConnectionManager
+      DTS:ConnectRetryCount="1"
+      DTS:ConnectRetryInterval="5"
+      DTS:ConnectionString="Data Source=SRVBSQADB;User ID=usSxSSIS;Initial Catalog=Optimus;Provider=SQLOLEDB.1;Auto Translate=False;Application Name=SSIS-BipSuc_Turnero-{5DA5808C-8489-48AC-8614-CB034DE02B61}SRVBSQADB.Optimus.usSxSSIS;">
+      <DTS:Password
+        DTS:Name="Password"
+        Sensitive="1"
+        p4:Salt="x5Wc6B2FxPA="
+        p4:IV="UaUwix27UPiZvxfyM0FvFQ=="
+        p4:Algorithm="http://www.w3.org/2001/04/xmlenc#aes256-cbc" xmlns:p4="www.microsoft.com/SqlServer/SSIS">L3jY6fujy1UxtmbFqa7od0nBK9qhffyrE+fCe8d/Rhm8aBQm1QqBxNousp0meN625NDdhUhYa8g6HCx2rT6uwkMK+goRVyoI1Bh8sL8gu+xiibX/hv4zR5z5PXfu4GG68/ZGFGo2cjg0FREF1V/9iKThpH6kqAZvY0SR1PdbE14=</DTS:Password>
+    </DTS:ConnectionManager>
+  </DTS:ObjectData>
+</DTS:ConnectionManager>

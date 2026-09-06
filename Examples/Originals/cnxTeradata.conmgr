@@ -1,0 +1,25 @@
+﻿<?xml version="1.0"?>
+<DTS:ConnectionManager xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:ObjectName="cnxTeradata"
+  DTS:DTSID="{29B4FDD4-193E-4D63-AC90-5C5CDA50E051}"
+  DTS:CreationName="TERADATA">
+  <DTS:ObjectData>
+    <DTS:ConnectionManager>
+      <TeraConnectionString>DBCNAME=tdgnn.ccba.usr.bpba;UID=D_DW_APPLICATIONS_USR;AUTHENTICATION=TD2;DATABASE=D_DW_APPLICATIONS;CHARSET=UTF8;DRIVER={Teradata Database ODBC Driver 20.00};LOGINTIMEOUT=20;</TeraConnectionString>
+      <TeraPassword
+        Sensitive="1"
+        p4:Salt="vDHQ7UJZF9E="
+        p4:IV="DX/GrU1SQMWII/VwSpKvQA=="
+        p4:Algorithm="http://www.w3.org/2001/04/xmlenc#aes256-cbc" xmlns:p4="www.microsoft.com/SqlServer/SSIS">Dp8/hXAQJtbinRP5pmiBHwSZWUm6uzhmZEtN43muALCA8mkSbYq5yL/nmZjeucgA/rWw7n+i5WeXoo3uwIA6ZQ==</TeraPassword>
+      <TeraRetain>False</TeraRetain>
+      <TeraInitialCatalog></TeraInitialCatalog>
+      <TeraServerName>tdgnn.ccba.usr.bpba</TeraServerName>
+      <TeraUserName>D_DW_APPLICATIONS_USR</TeraUserName>
+      <TeraDatabase>D_DW_APPLICATIONS</TeraDatabase>
+      <TeraAccount></TeraAccount>
+      <TeraAuthentication>TD2</TeraAuthentication>
+      <TeraWinAuthentication>False</TeraWinAuthentication>
+      <TeraUseUTF8CharSet>False</TeraUseUTF8CharSet>
+    </DTS:ConnectionManager>
+  </DTS:ObjectData>
+</DTS:ConnectionManager>
