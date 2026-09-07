@@ -11,6 +11,10 @@ Tests del Generador MVP (solo Campanias). Cubren:
 - project-context-v1: que la resolucion de Connection Managers (DTSID por
   nombre) venga del ProjectContext real del proyecto BipSuc, no de un
   diccionario hardcodeado (KNOWN_CONNECTION_MANAGERS ya no existe).
+- template-teradata-to-sql-v1: que Data Conversion sea OPCIONAL -- Campanias
+  (Caso A, con conversion) sigue funcionando igual, y un spec sintetico sin
+  transformaciones (Caso B) genera Source -> Destination directo, sin dejar
+  componentes/paths/layout huerfanos.
 """
 
 import copy
@@ -32,6 +36,7 @@ from project_context.context_builder import build_project_context
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEMPLATE_PATH = os.path.join(REPO_ROOT, "templates", "campanias_base.dtsx")
 SPEC_PATH = os.path.join(REPO_ROOT, "specs", "campanias_generated.json")
+SYNTHETIC_SPEC_PATH = os.path.join(REPO_ROOT, "specs", "synthetic_direct_mapping.json")
 FIXTURES_DIR = os.path.join(REPO_ROOT, "Examples", "Originals")
 DTPROJ_PATH = os.path.join(FIXTURES_DIR, "BipSuc.dtproj")
 PARAMS_PATH = os.path.join(FIXTURES_DIR, "Project.params")
@@ -48,6 +53,11 @@ EXPECTED_OLEDB_DTSID = "{5DA5808C-8489-48AC-8614-CB034DE02B61}"
 
 def _load_spec():
     with open(SPEC_PATH, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _load_synthetic_spec():
+    with open(SYNTHETIC_SPEC_PATH, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -158,6 +168,134 @@ class GeneratorEndToEndTests(unittest.TestCase):
         template_root_dtsid = "{03C7554A-0D65-44DD-9BEF-4D37D0AF5CB8}"
         self.assertNotEqual(self.ir["package_dtsid"], template_root_dtsid)
         self.assertIsNotNone(self.ir["package_dtsid"])
+
+
+class OptionalDataConversionTests(unittest.TestCase):
+    """
+    template-teradata-to-sql-v1: Data Conversion pasa a ser OPCIONAL.
+
+    Caso A (Campanias, con conversion) se re-verifica acá con foco
+    estructural (3 componentes/2 paths); Caso B (spec sintetico,
+    specs/synthetic_direct_mapping.json) prueba la topologia directa
+    Source -> Destination sin ningun componente/path/layout huerfano.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.campanias_spec = _load_spec()
+        cls.synthetic_spec = _load_synthetic_spec()
+        cls.tmp_dir = tempfile.mkdtemp(prefix="ssis_generator_optional_conversion_")
+
+        cls.campanias_output = os.path.join(cls.tmp_dir, "CaseA_Campanias.dtsx")
+        generate(cls.campanias_spec, PROJECT_CONTEXT, TEMPLATE_PATH, cls.campanias_output)
+        cls.campanias_ir = ssis_parser.parse_file(cls.campanias_output)
+        cls.campanias_validation = ssis_validator.validate_ir(cls.campanias_ir)
+        cls.campanias_df = cls.campanias_ir["data_flows"][0]
+
+        cls.synthetic_output = os.path.join(cls.tmp_dir, "CaseB_Synthetic.dtsx")
+        generate(cls.synthetic_spec, PROJECT_CONTEXT, TEMPLATE_PATH, cls.synthetic_output)
+        cls.synthetic_ir = ssis_parser.parse_file(cls.synthetic_output)
+        cls.synthetic_validation = ssis_validator.validate_ir(cls.synthetic_ir)
+        cls.synthetic_df = cls.synthetic_ir["data_flows"][0]
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.tmp_dir, ignore_errors=True)
+
+    # -- spec_validator: 0 o 1 transformations --------------------------
+    def test_zero_transformations_is_a_valid_spec(self):
+        self.assertEqual(validate_spec(self.synthetic_spec, PROJECT_CONTEXT), [])
+
+    def test_one_data_conversion_is_still_a_valid_spec(self):
+        self.assertEqual(validate_spec(self.campanias_spec, PROJECT_CONTEXT), [])
+
+    def test_more_than_one_transformation_is_rejected(self):
+        spec = copy.deepcopy(self.campanias_spec)
+        spec["data_flow"]["transformations"].append(
+            {"type": "data_conversion", "name": "Segunda conversion", "conversions": []}
+        )
+        errors = validate_spec(spec, PROJECT_CONTEXT)
+        self.assertTrue(errors)
+        self.assertTrue(any("maximo 1 elemento" in e for e in errors))
+
+    def test_missing_transformations_key_is_equivalent_to_empty_list(self):
+        spec = copy.deepcopy(self.synthetic_spec)
+        del spec["data_flow"]["transformations"]
+        self.assertEqual(validate_spec(spec, PROJECT_CONTEXT), [])
+
+    # -- Caso A: con Data Conversion (Campanias) -------------------------
+    def test_case_a_has_three_components_and_two_paths(self):
+        self.assertEqual(len(self.campanias_df["components"]), 3)
+        self.assertEqual(
+            {c["type"] for c in self.campanias_df["components"]},
+            {"teradata_source", "data_conversion", "ole_db_destination"},
+        )
+        self.assertEqual(len(self.campanias_df["paths"]), 2)
+
+    def test_case_a_validates_without_errors(self):
+        self.assertTrue(self.campanias_validation["valid"])
+        self.assertEqual(self.campanias_validation["errors"], [])
+
+    # -- Caso B: sin Data Conversion (sintetico) -------------------------
+    def test_case_b_has_two_components_no_data_conversion(self):
+        types_found = {c["type"] for c in self.synthetic_df["components"]}
+        self.assertEqual(len(self.synthetic_df["components"]), 2)
+        self.assertEqual(types_found, {"teradata_source", "ole_db_destination"})
+        self.assertNotIn("data_conversion", types_found)
+
+    def test_case_b_has_exactly_one_direct_path(self):
+        self.assertEqual(len(self.synthetic_df["paths"]), 1)
+        path = self.synthetic_df["paths"][0]
+        self.assertEqual(path["from"], self.synthetic_spec["data_flow"]["source"]["name"])
+        self.assertEqual(path["to"], self.synthetic_spec["data_flow"]["destination"]["name"])
+
+    def test_case_b_mappings_resolve_lineage_directly_from_source(self):
+        dest = next(
+            c for c in self.synthetic_df["components"] if c["type"] == "ole_db_destination"
+        )
+        self.assertEqual(len(dest["mappings"]), 2)
+        for mapping in dest["mappings"]:
+            with self.subTest(column=mapping["pipeline_input_column"]):
+                self.assertIsNotNone(mapping["source_column"])
+                self.assertEqual(
+                    mapping["source_component"],
+                    self.synthetic_spec["data_flow"]["source"]["name"],
+                )
+
+    def test_case_b_no_orphaned_data_conversion_component_in_raw_xml(self):
+        with open(self.synthetic_output, encoding="utf-8") as f:
+            content = f.read()
+        self.assertNotIn("Microsoft.DataConvert", content)
+
+    def test_case_b_design_time_properties_has_no_dangling_conversion_refs(self):
+        with open(self.synthetic_output, encoding="utf-8") as f:
+            content = f.read()
+        design_time_start = content.index("<DTS:DesignTimeProperties>")
+        design_time_section = content[design_time_start:]
+        source_name = self.synthetic_spec["data_flow"]["source"]["name"]
+        destination_name = self.synthetic_spec["data_flow"]["destination"]["name"]
+        # No debe quedar NINGUNA referencia al componente eliminado, ni al
+        # nombre que tenia en el template original.
+        self.assertNotIn("Conversión de datos", design_time_section)
+        self.assertNotIn("Data Conversion", design_time_section)
+        # Los 2 componentes que SI existen deben estar presentes en el layout.
+        self.assertIn(source_name, design_time_section)
+        self.assertIn(destination_name, design_time_section)
+
+    def test_case_b_validates_without_errors(self):
+        self.assertTrue(self.synthetic_validation["valid"])
+        self.assertEqual(self.synthetic_validation["errors"], [])
+
+    def test_case_b_output_path_not_written_before_validation_would_fail(self):
+        # Sanity check inverso: un spec sintetico INVALIDO (mapping a una
+        # columna inexistente) sigue fallando fail-fast igual que antes,
+        # tambien en la topologia sin conversion.
+        spec = copy.deepcopy(self.synthetic_spec)
+        spec["data_flow"]["destination"]["mappings"][0]["source"] = "NO_EXISTE"
+        output_path = os.path.join(self.tmp_dir, "should_not_exist_case_b.dtsx")
+        with self.assertRaises(SpecValidationError):
+            generate(spec, PROJECT_CONTEXT, TEMPLATE_PATH, output_path)
+        self.assertFalse(os.path.exists(output_path))
 
 
 class ProjectContextIntegrationTests(unittest.TestCase):

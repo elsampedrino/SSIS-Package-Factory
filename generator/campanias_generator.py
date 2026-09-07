@@ -7,22 +7,25 @@ BipSuc_CampaniasVigentes.dtsx, un paquete real y validado).
 
 Estrategia (ver docs/generator_mvp.md): template validado + modificacion
 programatica sobre arbol ElementTree. Nunca string-replace ciego sobre el
-XML funcional — la unica excepcion, deliberada y documentada, es el bloque
-DTS:DesignTimeProperties (puro layout, sin impacto funcional segun el propio
-comentario del archivo), donde se hace una sustitucion de texto acotada
-usando exactamente las mismas cadenas de refId ya calculadas para el resto
-del documento.
+XML funcional. El bloque DTS:DesignTimeProperties (puro layout, sin impacto
+funcional segun el propio comentario del archivo) es la unica seccion que
+no se genera de cero: se parsea su contenido embebido como un documento XML
+propio, se editan sus refIds (renombrar o eliminar segun corresponda) y se
+vuelve a serializar — nunca se genera su forma final desde cero.
 
-Alcance: EXCLUSIVAMENTE la topologia Teradata Source -> Data Conversion ->
-OLE DB Destination. No soporta Sequence Containers, Execute SQL Task,
+Alcance (template-teradata-to-sql-v1): Teradata Source -> [Data Conversion
+OPCIONAL] -> OLE DB Destination. Si el spec no declara ninguna conversion,
+el componente Data Conversion se elimina del arbol (no queda presente pero
+desconectado) y el pipeline queda Source -> Destination directo. No soporta
+mas de 1 Data Conversion, ni Sequence Containers, Execute SQL Task,
 transacciones, staging, Merge Join, Conditional Split, Row Count ni OLE DB
-Source como origen.
+Source como origen. No hay inferencia automatica de que columnas necesitan
+conversion — es siempre una declaracion explicita del spec (ver
+docs/template_teradata_to_sql_v1_audit.md, §5).
 """
 
 from __future__ import annotations
 
-import copy
-import re
 import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Optional
 
@@ -244,27 +247,78 @@ def _make_error_columns(data_flow: str, component: str, output: str) -> List[ET.
 
 # ---------------------------------------------------------------------------
 # DesignTimeProperties — ver docstring del modulo (excepcion documentada)
+#
+# Desde que Data Conversion pasa a ser opcional (template-teradata-to-sql-v1),
+# la reescritura de este bloque ya no alcanza con renombrar refs 1:1: cuando
+# el componente se ELIMINA del arbol principal, su NodeLayout (y el
+# EdgeLayout del path que dejo de existir) tambien deben desaparecer del
+# layout — dejarlos apuntando a un refId que ya no existe en ningun otro
+# lado del documento es exactamente el tipo de "referencia rota" que el
+# proyecto evita en todos los demas casos (ver ssis_validator.py).
+#
+# Por eso esta seccion pasó de sustitucion de texto a PARSEAR el contenido
+# embebido como XML de verdad (es un documento valido por si solo, ver
+# BipSuc_CampaniasVigentes.dtsx), editar el arbol (renombrar atributos
+# Id/design-time-name via el mismo ref_id_map de siempre; eliminar los nodos
+# cuyo ref este en removed_refs; eliminar cualquier AnnotationLayout, igual
+# que antes), y volver a serializar. Efecto secundario cosmetico aceptado:
+# se pierden los comentarios XML explicativos del bloque original (son para
+# un humano editando a mano, no aplican a un archivo generado) y los
+# namespaces sin prefijo pueden re-serializarse con un prefijo autogenerado
+# — ambos casos son válidos y legibles por SSDT igual, ninguno afecta el
+# comportamiento en tiempo de ejecución.
 # ---------------------------------------------------------------------------
-_ANNOTATION_LAYOUT_PATTERN = re.compile(r"\s*<AnnotationLayout\b[^>]*/>")
+_IDENTITY_ATTRS = ("Id", "design-time-name")
 
 
-def _rewrite_design_time_properties(text: str, ref_id_map: Dict[str, str]) -> str:
+def _rewrite_design_time_properties(
+    text: str, ref_id_map: Dict[str, str], removed_refs: set[str]
+) -> str:
     """
-    Sustituye, dentro del texto embebido de DTS:DesignTimeProperties, cada
-    aparicion EXACTA de un refId viejo por su equivalente nuevo. No es
-    string-replace "ciego": las claves son cadenas de refId especificas ya
-    calculadas para el resto del documento (no patrones genericos), y se
-    reemplazan de mas larga a mas corta para evitar colisiones de prefijo.
-    Ademas elimina cualquier <AnnotationLayout/> (comentario visual del
-    autor original del template, no aplicable a un paquete generado).
+    Reescribe el texto embebido de DTS:DesignTimeProperties:
+    - renombra cada atributo Id/design-time-name cuyo valor este en ref_id_map;
+    - elimina cualquier elemento cuyo Id/design-time-name este en removed_refs
+      (componentes/paths que ya no existen en la topologia final);
+    - elimina cualquier <AnnotationLayout> (comentario visual del autor
+      original del template, no aplicable a un paquete generado).
+    Si el texto no fuera XML valido por algun motivo inesperado, se devuelve
+    sin tocar — mejor conservar el layout viejo que corromper el archivo.
     """
-    result = text
-    for old_ref in sorted(ref_id_map, key=len, reverse=True):
-        new_ref = ref_id_map[old_ref]
-        if old_ref != new_ref:
-            result = result.replace(old_ref, new_ref)
-    result = _ANNOTATION_LAYOUT_PATTERN.sub("", result)
-    return result
+    try:
+        root = ET.fromstring(text)
+    except ET.ParseError:
+        return text
+
+    for prefix, uri in (
+        ("", "clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph"),
+        ("mssgle", "clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph"),
+        ("assembly", "http://schemas.microsoft.com/winfx/2006/xaml"),
+    ):
+        ET.register_namespace(prefix, uri)
+
+    to_remove = []
+    for parent in root.iter():
+        for child in list(parent):
+            if child.tag.endswith("AnnotationLayout"):
+                to_remove.append((parent, child))
+                continue
+            marked_for_removal = False
+            for attr in _IDENTITY_ATTRS:
+                value = child.get(attr)
+                if value is None:
+                    continue
+                if value in removed_refs:
+                    marked_for_removal = True
+                    break
+                if value in ref_id_map:
+                    child.set(attr, ref_id_map[value])
+            if marked_for_removal:
+                to_remove.append((parent, child))
+
+    for parent, child in to_remove:
+        parent.remove(child)
+
+    return ET.tostring(root, encoding="unicode")
 
 
 # ---------------------------------------------------------------------------
@@ -280,11 +334,12 @@ def build_package_tree(
     data_flow = spec["data_flow"]
     data_flow_name = data_flow["name"]
     source_spec = data_flow["source"]
-    transform_spec = data_flow["transformations"][0]
+    transformations = data_flow.get("transformations", [])
+    transform_spec = transformations[0] if transformations else None
     destination_spec = data_flow["destination"]
 
     source_name = source_spec["name"]
-    conversion_name = transform_spec["name"]
+    conversion_name = transform_spec["name"] if transform_spec is not None else None
     destination_name = destination_spec["name"]
 
     tree = ET.parse(template_path)
@@ -312,15 +367,28 @@ def build_package_tree(
 
     # Registro de columnas del pipeline: nombre -> metadata (para resolver
     # lineageId/tipo cacheado desde cualquier componente aguas abajo). Se
-    # completa a medida que se generan Teradata Source y Data Conversion.
+    # completa a medida que se generan Teradata Source y (si existe) Data
+    # Conversion.
     pipeline_columns: Dict[str, Dict[str, Any]] = {}
 
     _build_teradata_source(
         teradata_el, data_flow_name, source_name, source_spec, pipeline_columns, project_context
     )
-    _build_data_conversion(
-        conversion_el, data_flow_name, conversion_name, transform_spec, pipeline_columns
-    )
+
+    if transform_spec is not None:
+        _build_data_conversion(
+            conversion_el, data_flow_name, conversion_name, transform_spec, pipeline_columns
+        )
+    else:
+        # Data Conversion opcional (template-teradata-to-sql-v1): si el spec
+        # no declara ninguna conversion, el componente se ELIMINA del arbol
+        # en vez de dejarlo presente pero desconectado. Un componente sin
+        # ningun <path> que lo referencie es exactamente el patron
+        # "huerfano" que ya detectamos como señal de alarma en Turnero
+        # (docs/campanias_vs_turnero.md) — no queremos reproducirlo a
+        # proposito en un paquete recien generado.
+        components_el.remove(conversion_el)
+
     _build_ole_db_destination(
         destination_el,
         data_flow_name,
@@ -604,25 +672,42 @@ def _rebuild_paths(
     pipeline_el: ET.Element,
     data_flow: str,
     source_name: str,
-    conversion_name: str,
+    conversion_name: Optional[str],
     destination_name: str,
 ) -> None:
+    """
+    Topologia dinamica (template-teradata-to-sql-v1):
+    - Con Data Conversion (conversion_name no None): 2 paths, igual que
+      siempre — Source -> Conversion -> Destination.
+    - Sin Data Conversion (conversion_name es None): 1 solo path, Source ->
+      Destination directo. El NOMBRE de ese path sigue siendo PATH_1_NAME
+      ("Teradata Source Output", el nombre del output que lo origina, ver
+      docs/xml_patterns.md §6) — no cambia solo porque cambie su endId.
+    """
     paths_el = pipeline_el.find("paths")
     _clear_children(paths_el, "path")
 
-    path1 = ET.Element("path")
-    path1.set("refId", path_ref(data_flow, PATH_1_NAME))
-    path1.set("endId", input_ref(data_flow, conversion_name, CONVERSION_INPUT_NAME))
-    path1.set("name", PATH_1_NAME)
-    path1.set("startId", output_ref(data_flow, source_name, SOURCE_OUTPUT_NAME))
-    paths_el.append(path1)
+    if conversion_name is not None:
+        path1 = ET.Element("path")
+        path1.set("refId", path_ref(data_flow, PATH_1_NAME))
+        path1.set("endId", input_ref(data_flow, conversion_name, CONVERSION_INPUT_NAME))
+        path1.set("name", PATH_1_NAME)
+        path1.set("startId", output_ref(data_flow, source_name, SOURCE_OUTPUT_NAME))
+        paths_el.append(path1)
 
-    path2 = ET.Element("path")
-    path2.set("refId", path_ref(data_flow, PATH_2_NAME))
-    path2.set("endId", input_ref(data_flow, destination_name, DESTINATION_INPUT_NAME))
-    path2.set("name", PATH_2_NAME)
-    path2.set("startId", output_ref(data_flow, conversion_name, CONVERSION_OUTPUT_NAME))
-    paths_el.append(path2)
+        path2 = ET.Element("path")
+        path2.set("refId", path_ref(data_flow, PATH_2_NAME))
+        path2.set("endId", input_ref(data_flow, destination_name, DESTINATION_INPUT_NAME))
+        path2.set("name", PATH_2_NAME)
+        path2.set("startId", output_ref(data_flow, conversion_name, CONVERSION_OUTPUT_NAME))
+        paths_el.append(path2)
+    else:
+        direct_path = ET.Element("path")
+        direct_path.set("refId", path_ref(data_flow, PATH_1_NAME))
+        direct_path.set("endId", input_ref(data_flow, destination_name, DESTINATION_INPUT_NAME))
+        direct_path.set("name", PATH_1_NAME)
+        direct_path.set("startId", output_ref(data_flow, source_name, SOURCE_OUTPUT_NAME))
+        paths_el.append(direct_path)
 
 
 def _update_design_time_properties(
@@ -634,9 +719,18 @@ def _update_design_time_properties(
     old_destination: str,
     new_data_flow: str,
     new_source: str,
-    new_conversion: str,
+    new_conversion: Optional[str],
     new_destination: str,
 ) -> None:
+    """
+    new_conversion es None cuando el spec no declara Data Conversion. En ese
+    caso, el NodeLayout del componente y el EdgeLayout del segundo path
+    (PATH_2_NAME) se ELIMINAN del layout (van a removed_refs) en vez de
+    renombrarse — ya no existe ningun componente/path en el documento
+    principal al que puedan seguir apuntando. PATH_1_NAME se renombra igual
+    en los dos casos: es el mismo path (Source -> algo), solo cambia su
+    destino final, no su identidad.
+    """
     dtp_el = root.find(dts("DesignTimeProperties"))
     if dtp_el is None or dtp_el.text is None:
         return
@@ -644,12 +738,21 @@ def _update_design_time_properties(
     ref_id_map = {
         dataflow_executable_ref(old_data_flow): dataflow_executable_ref(new_data_flow),
         component_ref(old_data_flow, old_source): component_ref(new_data_flow, new_source),
-        component_ref(old_data_flow, old_conversion): component_ref(new_data_flow, new_conversion),
         component_ref(old_data_flow, old_destination): component_ref(new_data_flow, new_destination),
         path_ref(old_data_flow, PATH_1_NAME): path_ref(new_data_flow, PATH_1_NAME),
-        path_ref(old_data_flow, PATH_2_NAME): path_ref(new_data_flow, PATH_2_NAME),
     }
-    dtp_el.text = _rewrite_design_time_properties(dtp_el.text, ref_id_map)
+    removed_refs: set[str] = set()
+
+    if new_conversion is not None:
+        ref_id_map[component_ref(old_data_flow, old_conversion)] = component_ref(
+            new_data_flow, new_conversion
+        )
+        ref_id_map[path_ref(old_data_flow, PATH_2_NAME)] = path_ref(new_data_flow, PATH_2_NAME)
+    else:
+        removed_refs.add(component_ref(old_data_flow, old_conversion))
+        removed_refs.add(path_ref(old_data_flow, PATH_2_NAME))
+
+    dtp_el.text = _rewrite_design_time_properties(dtp_el.text, ref_id_map, removed_refs)
 
 
 def generate(

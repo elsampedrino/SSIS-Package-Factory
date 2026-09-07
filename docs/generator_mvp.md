@@ -254,7 +254,7 @@ Chequeos implementados (mínimo pedido, todos presentes):
 |---|---|
 | `source.type == "teradata"` | obligatorio, exacto |
 | `destination.type == "ole_db"` | obligatorio, exacto |
-| Topología soportada | `transformations` debe tener EXACTAMENTE 1 elemento, de tipo `data_conversion` |
+| Topología soportada | `transformations` admite 0 o 1 elemento (Data Conversion es OPCIONAL desde `template-teradata-to-sql-v1`, ver `docs/template_teradata_to_sql_v1_audit.md`), de tipo `data_conversion` cuando está presente |
 | Columnas de origen sin duplicados | por nombre, dentro de `source.columns` |
 | Input de cada conversión existente | `conversions[].input` debe estar en `source.columns` |
 | Output de conversión sin colisiones | ni entre sí, ni contra nombres de columna de origen (evita ambigüedad al resolver `mapping.source`) |
@@ -305,7 +305,7 @@ este MVP ni fue lo que se probó (la prueba fue en QA).
 
 ## Limitaciones explícitas del MVP
 
-1. Limitado a la forma exacta Teradata Source → Data Conversion → OLE DB Destination (1 fuente, EXACTAMENTE 1 transformación de tipo Data Conversion, 1 destino, sin fan-in/fan-out) — `spec_validator` lo rechaza explícitamente si no se cumple.
+1. **[Actualizado en `template-teradata-to-sql-v1`, ver `docs/template_teradata_to_sql_v1_audit.md`]** Limitado a la forma Teradata Source → [Data Conversion **opcional**, como máximo 1] → OLE DB Destination (1 fuente, 1 destino, sin fan-in/fan-out) — `spec_validator` rechaza explícitamente más de 1 transformación, pero 0 ya es un caso válido (Source → Destination directo).
 2. No soporta Sequence Containers, Execute SQL Task, transacciones, staging, Merge Join, Conditional Split, Row Count ni OLE DB Source como origen — el parser los conoce, el generador no los escribe todavía.
 3. Los GUID de Connection Manager están hardcodeados a los dos observados en Campanias (`cnxTeradata`, `cnxSrvBsLogSBD01`) en `generator/xml_helpers.KNOWN_CONNECTION_MANAGERS` — válido solo dentro del mismo proyecto SSIS. Un nombre de conexión distinto es rechazado explícitamente (`SpecValidationError`/`UnknownConnectionManagerError`), nunca se reutiliza el GUID de otro nombre.
 4. Este repositorio no automatiza la validación contra un motor SSIS real (no hay uno disponible en este entorno) — Nivel 2 y Nivel 3 se ejecutan manualmente. **Ya se ejecutaron una vez con éxito** (ver Milestone arriba), pero cada cambio futuro al generador/template debería re-verificarse manualmente del mismo modo; no hay un gate automático que lo reemplace.
@@ -316,6 +316,7 @@ este MVP ni fue lo que se probó (la prueba fue en QA).
 9. `target_type` de una conversión (Data Conversion) no exige `length`/`code_page` aunque fuera `str`/`wstr` — el único caso real observado es `dbDate`; no hay evidencia de cómo luce una conversión hacia texto para replicar la regla con confianza.
 10. Un paquete que referencia `Project.ConnectionManagers[...]` (este generador incluido) solo resuelve esas conexiones cuando está cargado DENTRO del proyecto SSIS correspondiente en Visual Studio/SSDT — nunca como archivo suelto ni como "Elemento de la solución" (ver Milestone arriba). No es una limitación de este generador en particular, sino del modelo de Connection Managers de proyecto de SSIS; se documenta acá porque afecta directamente cómo debe probarse cualquier `.dtsx` que este generador produzca.
 11. Sigue sin resolverse programáticamente el contexto de proyecto (`.conmgr`, `Project.params`, `.dtproj`) — los GUID de Connection Manager siguen hardcodeados (ver limitación 3) y no hay lectura de propiedades externas al `.dtsx` como `RetainSameConnection`, `DelayValidation` a nivel de proyecto, o parámetros de proyecto. Ver la sección "Próxima fase" más abajo.
+12. **Cada corrida de `generate()` asigna un `DTS:DTSID`/`VersionGUID` nuevo y aleatorio al Package y al Data Flow Task Executable** (por diseño — es un objeto nuevo cada vez). Esto significa que dos regeneraciones sucesivas del MISMO `process_spec` producen archivos funcionalmente idénticos pero con identidad distinta. Ocurrió en la práctica: el `CampaniasGenerado.dtsx` versionado en el repo tiene un DTSID distinto al que efectivamente se probó en Visual Studio/SSDT contra QA (`{5EC80C80-7005-4064-988C-1A74E75BFC3F}`, registrado en `BipSuc.dtproj`). Se decidió no corregirlo — el contenido funcional es idéntico y es lo que importa — pero queda documentado para no asumir que el archivo del repo es *byte-a-byte* el mismo objeto que cualquier prueba manual anterior.
 
 ## Próxima fase (solo documentada, NO implementada en esta iteración)
 

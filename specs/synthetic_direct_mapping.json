@@ -1,0 +1,30 @@
+{
+  "_note": "Spec SINTETICO de test, NO productivo. Existe solo para probar estructuralmente la topologia Source -> Destination directa (sin Data Conversion) de template-teradata-to-sql-v1. No demuestra compatibilidad real de tipos entre motores de base de datos -- ver docs/template_teradata_to_sql_v1_audit.md.",
+  "package": {
+    "name": "SyntheticDirectMapping"
+  },
+  "data_flow": {
+    "name": "Flujo Directo",
+    "source": {
+      "type": "teradata",
+      "name": "Origen Teradata",
+      "connection": "cnxTeradata",
+      "sql": "SELECT ID, DESCRIPCION FROM TABLA_SINTETICA",
+      "columns": [
+        {"name": "ID", "data_type": "i4"},
+        {"name": "DESCRIPCION", "data_type": "wstr", "length": 100}
+      ]
+    },
+    "transformations": [],
+    "destination": {
+      "type": "ole_db",
+      "name": "Destino SQL",
+      "connection": "cnxSrvBsLogSBD01",
+      "table": "[dbo].[Sintetico]",
+      "mappings": [
+        {"source": "ID", "target": "ID", "target_data_type": "i4"},
+        {"source": "DESCRIPCION", "target": "DESCRIPCION", "target_data_type": "wstr", "target_length": 100}
+      ]
+    }
+  }
+}

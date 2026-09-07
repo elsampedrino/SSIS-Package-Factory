@@ -202,15 +202,26 @@ def validate_spec(spec: Dict[str, Any], project_context: Dict[str, Any]) -> List
             )
 
     # -----------------------------------------------------------------
-    # transformations — topologia soportada: exactamente 1 data_conversion
+    # transformations — Data Conversion es OPCIONAL desde
+    # template-teradata-to-sql-v1: 0 elementos (Source -> Destination
+    # directo) o 1 elemento (Source -> Data Conversion -> Destination).
+    # Mas de 1 sigue sin estar soportado (no se infiere ni se permite
+    # encadenar transformaciones todavia). La AUSENCIA de la clave
+    # 'transformations' se trata igual que una lista vacia (equivalente,
+    # segun lo pedido: ambas formas significan "sin Data Conversion").
     # -----------------------------------------------------------------
-    transformations = data_flow.get("transformations")
-    if not isinstance(transformations, list) or len(transformations) != 1:
+    transformations = data_flow.get("transformations", [])
+    if not isinstance(transformations, list):
         errors.append(
-            "'data_flow.transformations' debe ser una lista con EXACTAMENTE 1 "
-            "elemento en este MVP (topologia soportada: Teradata Source -> "
-            "Data Conversion -> OLE DB Destination). Elementos encontrados: "
-            f"{len(transformations) if isinstance(transformations, list) else 'N/A'}."
+            "'data_flow.transformations' debe ser una lista (vacia si no hace "
+            "falta Data Conversion, o con 1 elemento si hace falta)."
+        )
+        transformations = []
+    elif len(transformations) > 1:
+        errors.append(
+            "'data_flow.transformations' admite como maximo 1 elemento en este "
+            f"MVP (Data Conversion es opcional, pero no hay soporte para "
+            f"encadenar mas de una). Elementos encontrados: {len(transformations)}."
         )
         transformations = []
 
