@@ -160,6 +160,8 @@ def _make_output_column(
     *,
     length: Optional[int] = None,
     code_page: Optional[int] = None,
+    precision: Optional[int] = None,
+    scale: Optional[int] = None,
     lineage_id: Optional[str] = None,
     external_metadata_column_id: Optional[str] = None,
     special_flags: Optional[str] = None,
@@ -180,6 +182,10 @@ def _make_output_column(
         el.set("length", str(length))
     if code_page is not None:
         el.set("codePage", str(code_page))
+    if precision is not None:
+        el.set("precision", str(precision))
+    if scale is not None:
+        el.set("scale", str(scale))
     if lineage_id is not None:
         el.set("lineageId", lineage_id)
     el.set("name", name)
@@ -197,6 +203,8 @@ def _make_external_metadata_column(
     *,
     length: Optional[int] = None,
     code_page: Optional[int] = None,
+    precision: Optional[int] = None,
+    scale: Optional[int] = None,
 ) -> ET.Element:
     el = ET.Element("externalMetadataColumn")
     el.set("refId", ref_id)
@@ -205,6 +213,10 @@ def _make_external_metadata_column(
         el.set("length", str(length))
     if code_page is not None:
         el.set("codePage", str(code_page))
+    if precision is not None:
+        el.set("precision", str(precision))
+    if scale is not None:
+        el.set("scale", str(scale))
     el.set("name", name)
     return el
 
@@ -216,6 +228,8 @@ def _make_input_column(
     *,
     cached_length: Optional[int] = None,
     cached_code_page: Optional[int] = None,
+    cached_precision: Optional[int] = None,
+    cached_scale: Optional[int] = None,
     lineage_id: str,
     external_metadata_column_id: Optional[str] = None,
 ) -> ET.Element:
@@ -226,6 +240,10 @@ def _make_input_column(
     el.set("cachedDataType", cached_data_type)
     if cached_length is not None:
         el.set("cachedLength", str(cached_length))
+    if cached_precision is not None:
+        el.set("cachedPrecision", str(cached_precision))
+    if cached_scale is not None:
+        el.set("cachedScale", str(cached_scale))
     el.set("cachedName", cached_name)
     if external_metadata_column_id is not None:
         el.set("externalMetadataColumnId", external_metadata_column_id)
@@ -459,6 +477,8 @@ def _build_teradata_source(
         data_type = col["data_type"]
         length = col.get("length")
         code_page = col.get("code_page")
+        precision = col.get("precision")
+        scale = col.get("scale")
 
         out_ref = output_column_ref(data_flow, name, SOURCE_OUTPUT_NAME, col_name)
         ext_ref = output_external_column_ref(data_flow, name, SOURCE_OUTPUT_NAME, col_name)
@@ -470,18 +490,25 @@ def _build_teradata_source(
                 data_type,
                 length=length,
                 code_page=code_page,
+                precision=precision,
+                scale=scale,
                 lineage_id=out_ref,
                 external_metadata_column_id=ext_ref,
             )
         )
         external_columns_el.append(
-            _make_external_metadata_column(ext_ref, col_name, data_type, length=length, code_page=code_page)
+            _make_external_metadata_column(
+                ext_ref, col_name, data_type,
+                length=length, code_page=code_page, precision=precision, scale=scale,
+            )
         )
 
         error_ref = output_column_ref(data_flow, name, SOURCE_ERROR_OUTPUT_NAME, col_name)
         error_output_columns_el.append(
             _make_output_column(
-                error_ref, col_name, data_type, length=length, code_page=code_page, lineage_id=error_ref
+                error_ref, col_name, data_type,
+                length=length, code_page=code_page, precision=precision, scale=scale,
+                lineage_id=error_ref,
             )
         )
 
@@ -490,6 +517,8 @@ def _build_teradata_source(
             "data_type": data_type,
             "length": length,
             "code_page": code_page,
+            "precision": precision,
+            "scale": scale,
         }
 
     for err_col in _make_error_columns(data_flow, name, SOURCE_ERROR_OUTPUT_NAME):
@@ -529,6 +558,17 @@ def _build_data_conversion(
         input_name = conv["input"]
         output_name = conv["output"]
         target_type = conv["target_type"]
+        # target_length/target_code_page/target_precision/target_scale: antes
+        # de este incremento, esta metadata se descartaba incondicionalmente
+        # (bug confirmado en la generalizacion contra PagosYRecaudaciones --
+        # ver docs/template_teradata_to_sql_v1_generalization_pagosyrecaudaciones.md,
+        # seccion 6). spec_validator.py ya exige estos campos cuando
+        # target_type lo requiere (str/wstr/numeric), asi que aca siempre
+        # estan presentes para esos tipos.
+        target_length = conv.get("target_length")
+        target_code_page = conv.get("target_code_page")
+        target_precision = conv.get("target_precision")
+        target_scale = conv.get("target_scale")
 
         source_meta = pipeline_columns.get(input_name)
         if source_meta is None:
@@ -545,6 +585,8 @@ def _build_data_conversion(
                 source_meta["data_type"],
                 cached_length=source_meta.get("length"),
                 cached_code_page=source_meta.get("code_page"),
+                cached_precision=source_meta.get("precision"),
+                cached_scale=source_meta.get("scale"),
                 lineage_id=source_meta["lineage_id"],
             )
         )
@@ -554,6 +596,10 @@ def _build_data_conversion(
             out_ref,
             output_name,
             target_type,
+            length=target_length,
+            code_page=target_code_page,
+            precision=target_precision,
+            scale=target_scale,
             lineage_id=out_ref,
             error_or_truncation_operation="Conversión",
             error_row_disposition="FailComponent",
@@ -585,8 +631,10 @@ def _build_data_conversion(
         pipeline_columns[output_name] = {
             "lineage_id": out_ref,
             "data_type": target_type,
-            "length": None,
-            "code_page": None,
+            "length": target_length,
+            "code_page": target_code_page,
+            "precision": target_precision,
+            "scale": target_scale,
         }
 
     for err_col in _make_error_columns(data_flow, name, CONVERSION_ERROR_OUTPUT_NAME):
@@ -607,6 +655,16 @@ def _build_ole_db_destination(
 
     properties_el = component_el.find("properties")
     _set_property_text(properties_el, "OpenRowset", spec["table"])
+
+    # access_mode: OPCIONAL (ver spec_validator.py). Si no viene en el spec,
+    # se preserva el valor que ya trae el template (0, igual que Campanias
+    # real) -- no se toca la property. Si viene, sobrescribe "AccessMode"
+    # con el mismo helper que ya usa OpenRowset. Ninguna otra property de
+    # Fast Load (FastLoadOptions/FastLoadKeepIdentity/FastLoadKeepNulls/
+    # FastLoadMaxInsertCommitSize) se toca -- fuera de alcance de este
+    # incremento (sin evidencia real de que varien entre paquetes).
+    if "access_mode" in spec:
+        _set_property_text(properties_el, "AccessMode", str(spec["access_mode"]))
 
     connection_el = component_el.find("connections/connection")
     connection_el.set(
@@ -630,6 +688,8 @@ def _build_ole_db_destination(
         target_type = mapping["target_data_type"]
         target_length = mapping.get("target_length")
         target_code_page = mapping.get("target_code_page")
+        target_precision = mapping.get("target_precision")
+        target_scale = mapping.get("target_scale")
 
         source_meta = pipeline_columns.get(source_name)
         if source_meta is None:
@@ -648,13 +708,17 @@ def _build_ole_db_destination(
                 source_meta["data_type"],
                 cached_length=source_meta.get("length"),
                 cached_code_page=source_meta.get("code_page"),
+                cached_precision=source_meta.get("precision"),
+                cached_scale=source_meta.get("scale"),
                 lineage_id=source_meta["lineage_id"],
                 external_metadata_column_id=ext_ref,
             )
         )
         external_columns_el.append(
             _make_external_metadata_column(
-                ext_ref, target_name, target_type, length=target_length, code_page=target_code_page
+                ext_ref, target_name, target_type,
+                length=target_length, code_page=target_code_page,
+                precision=target_precision, scale=target_scale,
             )
         )
 

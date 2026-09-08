@@ -1,0 +1,56 @@
+{
+  "_note": "Spec SINTETICO de test, NO productivo. Misma estructura que specs/synthetic_string_and_numeric_conversion.json (prueba las 6 conversiones str->wstr, las columnas numeric Mto_Evento(15,2)/Num_Cambio(9,5), y OLE DB Destination.AccessMode=3/Fast Load, detectados en la generalizacion contra PagosYRecaudaciones_FacturacionComi -- ver docs/template_teradata_to_sql_v1_generalization_pagosyrecaudaciones.md, seccion 6/8), pero apuntando a las conexiones REALES de ese proyecto (cnxTeradata/cnxSQL, resueltas via el ProjectContext de Examples/Originals/PagosYRecaudaciones_FacturacionComi/) en vez de las de BipSuc. Motivo: BipSuc.cnxTeradata apunta a una base Teradata distinta (otro DTSID, otro servidor/base) de la que origino estas columnas; usar ese contexto para un artefacto de validacion manual en SSDT seria enganoso. El spec usado por tests/test_generator_campanias.py (con conexiones de BipSuc) tiene el mismo access_mode=3 pero NO se le cambiaron las conexiones -- ese test es puramente estructural/de schema y no depende de a que base apunten los Connection Manager. Este archivo existe solo para generar el .dtsx de validacion manual, no para el test suite automatizado. Sigue sin ser el paquete completo: no incluye Script Task, variables de paquete, PropertyExpression ni Control Flow.",
+  "package": {
+    "name": "SyntheticStringAndNumericConversion"
+  },
+  "data_flow": {
+    "name": "Flujo String And Numeric",
+    "source": {
+      "type": "teradata",
+      "name": "Origen Teradata",
+      "connection": "cnxTeradata",
+      "sql": "SELECT Id_Evento, Cod_Identif_Tributaria, Num_Identif_Tributaria, Desc_Tipo_Impuesto, Desc_Movimiento_Trx, Cod_Moneda, Mto_Evento, Num_Cambio FROM TABLA_SINTETICA",
+      "columns": [
+        {"name": "Id_Evento", "data_type": "str", "length": 20, "code_page": 1252},
+        {"name": "Cod_Identif_Tributaria", "data_type": "str", "length": 10, "code_page": 1252},
+        {"name": "Num_Identif_Tributaria", "data_type": "str", "length": 20, "code_page": 1252},
+        {"name": "Desc_Tipo_Impuesto", "data_type": "str", "length": 255, "code_page": 1252},
+        {"name": "Desc_Movimiento_Trx", "data_type": "str", "length": 100, "code_page": 1252},
+        {"name": "Cod_Moneda", "data_type": "str", "length": 3, "code_page": 1252},
+        {"name": "Mto_Evento", "data_type": "numeric", "precision": 15, "scale": 2},
+        {"name": "Num_Cambio", "data_type": "numeric", "precision": 9, "scale": 5}
+      ]
+    },
+    "transformations": [
+      {
+        "type": "data_conversion",
+        "name": "Conversión de datos",
+        "conversions": [
+          {"input": "Id_Evento", "output": "Id_Evento_Sal", "target_type": "wstr", "target_length": 20},
+          {"input": "Cod_Identif_Tributaria", "output": "Cod_Identif_Tributaria_Sal", "target_type": "wstr", "target_length": 10},
+          {"input": "Num_Identif_Tributaria", "output": "Num_Identif_Tributaria_Sal", "target_type": "wstr", "target_length": 20},
+          {"input": "Desc_Tipo_Impuesto", "output": "Desc_Tipo_Impuesto_Sal", "target_type": "wstr", "target_length": 255},
+          {"input": "Desc_Movimiento_Trx", "output": "Desc_Movimiento_Trx_Sal", "target_type": "wstr", "target_length": 100},
+          {"input": "Cod_Moneda", "output": "Cod_Moneda_Sal", "target_type": "wstr", "target_length": 3}
+        ]
+      }
+    ],
+    "destination": {
+      "type": "ole_db",
+      "name": "Destino SQL",
+      "connection": "cnxSQL",
+      "table": "[staging].[SinteticoStringNumeric]",
+      "access_mode": 3,
+      "mappings": [
+        {"source": "Id_Evento_Sal", "target": "Id_Evento", "target_data_type": "wstr", "target_length": 20},
+        {"source": "Cod_Identif_Tributaria_Sal", "target": "Cod_Identif_Tributaria", "target_data_type": "wstr", "target_length": 10},
+        {"source": "Num_Identif_Tributaria_Sal", "target": "Num_Identif_Tributaria", "target_data_type": "wstr", "target_length": 20},
+        {"source": "Desc_Tipo_Impuesto_Sal", "target": "Desc_Tipo_Impuesto", "target_data_type": "wstr", "target_length": 255},
+        {"source": "Desc_Movimiento_Trx_Sal", "target": "Desc_Movimiento_Trx", "target_data_type": "wstr", "target_length": 100},
+        {"source": "Cod_Moneda_Sal", "target": "Cod_Moneda", "target_data_type": "wstr", "target_length": 3},
+        {"source": "Mto_Evento", "target": "Mto_Evento", "target_data_type": "numeric", "target_precision": 15, "target_scale": 2},
+        {"source": "Num_Cambio", "target": "Num_Cambio", "target_data_type": "numeric", "target_precision": 9, "target_scale": 5}
+      ]
+    }
+  }
+}

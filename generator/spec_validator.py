@@ -35,6 +35,7 @@ SUPPORTED_DESTINATION_TYPE = "ole_db"
 SUPPORTED_TRANSFORMATION_TYPE = "data_conversion"
 STRING_DATA_TYPES = {"str", "wstr"}
 NON_UNICODE_STRING_TYPE = "str"
+NUMERIC_DATA_TYPE = "numeric"
 
 # Provider esperado para cada rol, segun el unico tipo de source/destination
 # que este MVP sabe escribir (Microsoft.SSISTeradataSrc / Microsoft.OLEDBDestination).
@@ -61,6 +62,10 @@ def _non_empty_str(value: Any) -> bool:
 
 def _positive_int(value: Any) -> bool:
     return isinstance(value, int) and not isinstance(value, bool) and value > 0
+
+
+def _non_negative_int(value: Any) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
 
 
 def _validate_connection_reference(
@@ -200,6 +205,15 @@ def validate_spec(spec: Dict[str, Any], project_context: Dict[str, Any]) -> List
             errors.append(
                 f"{label} (data_type='str') requiere 'code_page' entero positivo."
             )
+        if data_type == NUMERIC_DATA_TYPE:
+            if not _positive_int(col.get("precision")):
+                errors.append(
+                    f"{label} (data_type='numeric') requiere 'precision' entero positivo."
+                )
+            if not _non_negative_int(col.get("scale")):
+                errors.append(
+                    f"{label} (data_type='numeric') requiere 'scale' entero >= 0."
+                )
 
     # -----------------------------------------------------------------
     # transformations — Data Conversion es OPCIONAL desde
@@ -283,6 +297,39 @@ def validate_spec(spec: Dict[str, Any], project_context: Dict[str, Any]) -> List
 
             if not _non_empty_str(target_type):
                 errors.append(f"{c_label}.target_type es obligatorio y no puede estar vacio.")
+            else:
+                # Mismo criterio que mappings[] (destino): el target_type de
+                # una conversion determina que metadata adicional hace falta
+                # para poder escribir un <outputColumn>/<externalMetadataColumn>
+                # valido (ver generator/campanias_generator.py::_build_data_conversion
+                # y docs/template_teradata_to_sql_v1_generalization_pagosyrecaudaciones.md,
+                # seccion 6 -- antes de esto, target_type='wstr'/'str' no
+                # exigia longitud y el generator la descartaba silenciosamente).
+                if target_type in STRING_DATA_TYPES and not _positive_int(
+                    conv.get("target_length")
+                ):
+                    errors.append(
+                        f"{c_label} (target_type={target_type!r}) requiere "
+                        "'target_length' entero positivo."
+                    )
+                if target_type == NON_UNICODE_STRING_TYPE and not _positive_int(
+                    conv.get("target_code_page")
+                ):
+                    errors.append(
+                        f"{c_label} (target_type='str') requiere 'target_code_page' "
+                        "entero positivo."
+                    )
+                if target_type == NUMERIC_DATA_TYPE:
+                    if not _positive_int(conv.get("target_precision")):
+                        errors.append(
+                            f"{c_label} (target_type='numeric') requiere "
+                            "'target_precision' entero positivo."
+                        )
+                    if not _non_negative_int(conv.get("target_scale")):
+                        errors.append(
+                            f"{c_label} (target_type='numeric') requiere "
+                            "'target_scale' entero >= 0."
+                        )
 
     # -----------------------------------------------------------------
     # destination
@@ -314,6 +361,29 @@ def validate_spec(spec: Dict[str, Any], project_context: Dict[str, Any]) -> List
             )
         if not _non_empty_str(destination.get("table")):
             errors.append("'data_flow.destination.table' es obligatorio y no puede estar vacio.")
+
+        # access_mode: OPCIONAL. Ausente -> el generator preserva el valor
+        # que ya trae el template (0, igual que Campanias real). Presente ->
+        # sobrescribe la property "AccessMode" del OLE DB Destination (ver
+        # generator/campanias_generator.py::_build_ole_db_destination).
+        #
+        # Solo se valida el TIPO (entero >= 0, igual criterio que 'scale'),
+        # no un enum cerrado de valores permitidos: la evidencia real
+        # disponible son unicamente 0 (Campanias) y 3 (PagosYRecaudaciones) --
+        # ver docs/template_teradata_to_sql_v1_generalization_pagosyrecaudaciones.md.
+        # Restringir a un conjunto fijo (p.ej. 0-4, el rango tipico del
+        # dropdown "Data access mode" de OLE DB Destination en SSDT)
+        # codificaria una suposicion sobre el enum interno de SSIS que esta
+        # auditoria no pudo confirmar de forma independiente para todos sus
+        # valores -- se prefiere no inferir mas alla de lo evidenciado.
+        if "access_mode" in destination and not _non_negative_int(
+            destination.get("access_mode")
+        ):
+            errors.append(
+                "'data_flow.destination.access_mode', si esta presente, debe "
+                "ser un entero >= 0 (valor crudo de la property AccessMode "
+                "del OLE DB Destination)."
+            )
 
     mappings = destination.get("mappings") if isinstance(destination, dict) else None
     if not isinstance(mappings, list) or len(mappings) == 0:
@@ -354,6 +424,17 @@ def validate_spec(spec: Dict[str, Any], project_context: Dict[str, Any]) -> List
                 f"{label} (target_data_type='str') requiere 'target_code_page' "
                 "entero positivo."
             )
+        if target_type == NUMERIC_DATA_TYPE:
+            if not _positive_int(mapping.get("target_precision")):
+                errors.append(
+                    f"{label} (target_data_type='numeric') requiere "
+                    "'target_precision' entero positivo."
+                )
+            if not _non_negative_int(mapping.get("target_scale")):
+                errors.append(
+                    f"{label} (target_data_type='numeric') requiere "
+                    "'target_scale' entero >= 0."
+                )
 
     return errors
 

@@ -50,7 +50,8 @@ from project_context.validator import (
 )
 
 FIXTURES_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "Examples", "Originals"
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "Examples", "Originals", "BipSuc_CampaniasVIgentes",
 )
 DTPROJ_PATH = os.path.join(FIXTURES_DIR, "BipSuc.dtproj")
 PARAMS_PATH = os.path.join(FIXTURES_DIR, "Project.params")

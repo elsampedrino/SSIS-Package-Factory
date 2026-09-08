@@ -1,0 +1,23 @@
+﻿<?xml version="1.0"?>
+<DTS:ConnectionManager xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:ObjectName="cnxSQL"
+  DTS:DTSID="{A4577B83-2782-42EF-8C00-C1D238C25009}"
+  DTS:CreationName="OLEDB">
+  <DTS:PropertyExpression
+    DTS:Name="Password">@[$Project::pwUsSxSSIS]</DTS:PropertyExpression>
+  <DTS:PropertyExpression
+    DTS:Name="ServerName">@[$Project::srvDbSqlCons11]</DTS:PropertyExpression>
+  <DTS:ObjectData>
+    <DTS:ConnectionManager
+      DTS:ConnectRetryCount="1"
+      DTS:ConnectRetryInterval="5"
+      DTS:ConnectionString="Data Source=SRVBSDESADB.child01.root.test;User ID=usSxSSIS;Initial Catalog=ARCA_RG5824;Provider=SQLOLEDB.1;Auto Translate=False;Application Name=SSIS-Package-{A4577B83-2782-42EF-8C00-C1D238C25009}SRVBSDESADB.child01.root.test.ARCA_RG5824.OptimusDesa;">
+      <DTS:Password
+        DTS:Name="Password"
+        Sensitive="1"
+        p4:Salt="zgxaJ9Bg9C0="
+        p4:IV="FcmNly8oaPh1RWJUdy6VIg=="
+        p4:Algorithm="http://www.w3.org/2001/04/xmlenc#aes256-cbc" xmlns:p4="www.microsoft.com/SqlServer/SSIS">pC8JdP5eI2wtnYIICrpEnWclLh7a+jVm5L3dU272YXfKZHxG0ti+hOy2gppb8RHcw5Y+zwqGhvuC1NbAvT5+rCcsTcVCsix5rmd2ILcvRQeaHlzuJVNBcXg0ve7riKgpwrEvx7T80Vi0BL874bowuuyFkGkkE4rPf4a089thXUM=</DTS:Password>
+    </DTS:ConnectionManager>
+  </DTS:ObjectData>
+</DTS:ConnectionManager>

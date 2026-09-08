@@ -24,6 +24,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -37,7 +38,10 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEMPLATE_PATH = os.path.join(REPO_ROOT, "templates", "campanias_base.dtsx")
 SPEC_PATH = os.path.join(REPO_ROOT, "specs", "campanias_generated.json")
 SYNTHETIC_SPEC_PATH = os.path.join(REPO_ROOT, "specs", "synthetic_direct_mapping.json")
-FIXTURES_DIR = os.path.join(REPO_ROOT, "Examples", "Originals")
+SYNTHETIC_STRING_NUMERIC_SPEC_PATH = os.path.join(
+    REPO_ROOT, "specs", "synthetic_string_and_numeric_conversion.json"
+)
+FIXTURES_DIR = os.path.join(REPO_ROOT, "Examples", "Originals", "BipSuc_CampaniasVIgentes")
 DTPROJ_PATH = os.path.join(FIXTURES_DIR, "BipSuc.dtproj")
 PARAMS_PATH = os.path.join(FIXTURES_DIR, "Project.params")
 
@@ -58,6 +62,11 @@ def _load_spec():
 
 def _load_synthetic_spec():
     with open(SYNTHETIC_SPEC_PATH, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _load_synthetic_string_numeric_spec():
+    with open(SYNTHETIC_STRING_NUMERIC_SPEC_PATH, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -535,6 +544,460 @@ class SpecValidationFailFastTests(unittest.TestCase):
         spec = copy.deepcopy(self.spec)
         spec["package"]["name"] = "   "
         self._assert_rejected_and_no_file_written(spec)
+
+
+class ConversionMetadataTests(unittest.TestCase):
+    """
+    Incremento posterior a template-teradata-to-sql-v1: cierra el gap
+    confirmado contra PagosYRecaudaciones_FacturacionComi (ver
+    docs/template_teradata_to_sql_v1_generalization_pagosyrecaudaciones.md,
+    seccion 6) -- antes de esto, _build_data_conversion() descartaba
+    incondicionalmente length/code_page/precision/scale de cualquier
+    conversion, sin importar target_type. Ahora conversions[] soporta
+    target_length/target_code_page (str/wstr) y target_precision/
+    target_scale (numeric), y esa metadata se propaga correctamente a
+    pipeline_columns y de ahi al OLE DB Destination
+    (cachedLength/cachedCodepage/cachedPrecision/cachedScale). El mismo
+    soporte se agrego, simetricamente, a source.columns[] y
+    destination.mappings[] para el tipo numeric.
+
+    NO genera el paquete completo PagosYRecaudaciones (sin Script Task,
+    variables de paquete, PropertyExpression ni Control Flow, y sin las
+    conexiones/tabla reales de ese proyecto) -- solo prueba que el spec
+    puede EXPRESAR sus 6 conversiones str->wstr y sus 2 columnas numeric
+    con precision/scale (ver specs/synthetic_string_and_numeric_conversion.json).
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.spec = _load_synthetic_string_numeric_spec()
+        cls.tmp_dir = tempfile.mkdtemp(prefix="ssis_generator_conversion_metadata_")
+        cls.output_path = os.path.join(cls.tmp_dir, "SyntheticStringAndNumeric.dtsx")
+        generate(cls.spec, PROJECT_CONTEXT, TEMPLATE_PATH, cls.output_path)
+        cls.tree = ET.parse(cls.output_path)
+        cls.ir = ssis_parser.parse_file(cls.output_path)
+        cls.validation = ssis_validator.validate_ir(cls.ir)
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.tmp_dir, ignore_errors=True)
+
+    def _component(self, class_id):
+        for comp in self.tree.getroot().iter("component"):
+            if comp.get("componentClassID") == class_id:
+                return comp
+        return None
+
+    def _conversion_output_column(self, name):
+        comp = self._component("Microsoft.DataConvert")
+        for col in comp.iter("outputColumn"):
+            if col.get("name") == name:
+                return col
+        return None
+
+    def _destination_input_column(self, cached_name):
+        comp = self._component("Microsoft.OLEDBDestination")
+        for col in comp.iter("inputColumn"):
+            if col.get("cachedName") == cached_name:
+                return col
+        return None
+
+    def _destination_external_metadata_column(self, name):
+        comp = self._component("Microsoft.OLEDBDestination")
+        for col in comp.iter("externalMetadataColumn"):
+            if col.get("name") == name:
+                return col
+        return None
+
+    def _destination_property(self, name):
+        comp = self._component("Microsoft.OLEDBDestination")
+        for prop in comp.find("properties").findall("property"):
+            if prop.get("name") == name:
+                return prop.text
+        return None
+
+    # -- expresividad del spec: los 8 puntos de PagosYRecaudaciones --------
+    def test_spec_expresses_six_str_to_wstr_conversions_with_length(self):
+        conversions = self.spec["data_flow"]["transformations"][0]["conversions"]
+        self.assertEqual(len(conversions), 6)
+        for conv in conversions:
+            with self.subTest(output=conv["output"]):
+                self.assertEqual(conv["target_type"], "wstr")
+                self.assertIsInstance(conv["target_length"], int)
+                self.assertGreater(conv["target_length"], 0)
+
+    def test_spec_expresses_mto_evento_numeric_15_2(self):
+        mapping = next(
+            m
+            for m in self.spec["data_flow"]["destination"]["mappings"]
+            if m["source"] == "Mto_Evento"
+        )
+        self.assertEqual(mapping["target_data_type"], "numeric")
+        self.assertEqual(mapping["target_precision"], 15)
+        self.assertEqual(mapping["target_scale"], 2)
+
+    def test_spec_expresses_num_cambio_numeric_9_5(self):
+        mapping = next(
+            m
+            for m in self.spec["data_flow"]["destination"]["mappings"]
+            if m["source"] == "Num_Cambio"
+        )
+        self.assertEqual(mapping["target_data_type"], "numeric")
+        self.assertEqual(mapping["target_precision"], 9)
+        self.assertEqual(mapping["target_scale"], 5)
+
+    def test_spec_itself_is_valid(self):
+        self.assertEqual(validate_spec(self.spec, PROJECT_CONTEXT), [])
+
+    def test_ir_validates_without_errors(self):
+        self.assertTrue(self.validation["valid"])
+        self.assertEqual(self.validation["errors"], [])
+
+    # -- generacion XML: length en el outputColumn de Data Conversion ------
+    def test_conversion_output_columns_have_length(self):
+        expected_lengths = {
+            "Id_Evento_Sal": 20,
+            "Cod_Identif_Tributaria_Sal": 10,
+            "Num_Identif_Tributaria_Sal": 20,
+            "Desc_Tipo_Impuesto_Sal": 255,
+            "Desc_Movimiento_Trx_Sal": 100,
+            "Cod_Moneda_Sal": 3,
+        }
+        for name, length in expected_lengths.items():
+            with self.subTest(column=name):
+                col = self._conversion_output_column(name)
+                self.assertIsNotNone(col)
+                self.assertEqual(col.get("dataType"), "wstr")
+                self.assertEqual(col.get("length"), str(length))
+
+    # -- propagacion Data Conversion -> pipeline_columns -> Destino --------
+    def test_destination_input_columns_have_cached_length_from_conversion(self):
+        expected_lengths = {
+            "Id_Evento_Sal": 20,
+            "Cod_Identif_Tributaria_Sal": 10,
+            "Num_Identif_Tributaria_Sal": 20,
+            "Desc_Tipo_Impuesto_Sal": 255,
+            "Desc_Movimiento_Trx_Sal": 100,
+            "Cod_Moneda_Sal": 3,
+        }
+        for name, length in expected_lengths.items():
+            with self.subTest(column=name):
+                col = self._destination_input_column(name)
+                self.assertIsNotNone(col)
+                self.assertEqual(col.get("cachedDataType"), "wstr")
+                self.assertEqual(col.get("cachedLength"), str(length))
+
+    def test_str_conversion_output_propagates_cached_code_page_to_destination(self):
+        # Variante puntual: uno de los 6 pares pasa a target_type='str' (en
+        # vez de 'wstr') para probar la propagacion de cachedCodepage, que
+        # el spec sintetico principal no ejercita (sus 6 conversiones son
+        # todas wstr, igual que las reales de PagosYRecaudaciones).
+        spec = copy.deepcopy(self.spec)
+        conv = spec["data_flow"]["transformations"][0]["conversions"][0]  # Id_Evento_Sal
+        conv["target_type"] = "str"
+        conv["target_code_page"] = 1252
+        self.assertEqual(validate_spec(spec, PROJECT_CONTEXT), [])
+
+        tmp_dir = tempfile.mkdtemp(prefix="ssis_generator_str_conversion_")
+        try:
+            output_path = os.path.join(tmp_dir, "StrConversion.dtsx")
+            generate(spec, PROJECT_CONTEXT, TEMPLATE_PATH, output_path)
+            tree = ET.parse(output_path)
+            dest = next(
+                c
+                for c in tree.getroot().iter("component")
+                if c.get("componentClassID") == "Microsoft.OLEDBDestination"
+            )
+            col = next(
+                c for c in dest.iter("inputColumn") if c.get("cachedName") == "Id_Evento_Sal"
+            )
+            self.assertEqual(col.get("cachedDataType"), "str")
+            self.assertEqual(col.get("cachedCodepage"), "1252")
+        finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    # -- numeric: source -> pipeline_columns -> Destino (sin Data Conversion) --
+    def test_destination_input_columns_have_cached_precision_and_scale(self):
+        cases = {"Mto_Evento": (15, 2), "Num_Cambio": (9, 5)}
+        for name, (precision, scale) in cases.items():
+            with self.subTest(column=name):
+                col = self._destination_input_column(name)
+                self.assertIsNotNone(col)
+                self.assertEqual(col.get("cachedDataType"), "numeric")
+                self.assertEqual(col.get("cachedPrecision"), str(precision))
+                self.assertEqual(col.get("cachedScale"), str(scale))
+
+    def test_destination_external_metadata_columns_have_precision_and_scale(self):
+        cases = {"Mto_Evento": (15, 2), "Num_Cambio": (9, 5)}
+        for name, (precision, scale) in cases.items():
+            with self.subTest(column=name):
+                col = self._destination_external_metadata_column(name)
+                self.assertIsNotNone(col)
+                self.assertEqual(col.get("dataType"), "numeric")
+                self.assertEqual(col.get("precision"), str(precision))
+                self.assertEqual(col.get("scale"), str(scale))
+
+    # -- OLE DB Destination.AccessMode (gap confirmado contra PagosYRecaudaciones) --
+    def test_synthetic_spec_declares_access_mode_3(self):
+        self.assertEqual(self.spec["data_flow"]["destination"]["access_mode"], 3)
+
+    def test_generated_destination_has_access_mode_3(self):
+        self.assertEqual(self._destination_property("AccessMode"), "3")
+
+
+class ConversionAndMappingValidationTests(unittest.TestCase):
+    """spec_validator: reglas fail-fast para target_length/target_code_page
+    (str/wstr) y target_precision/target_scale (numeric) en conversions[],
+    y su equivalente simetrico en source.columns[] y destination.mappings[].
+    Usa specs/synthetic_string_and_numeric_conversion.json como base (ya
+    cubre los 8 puntos de PagosYRecaudaciones) y muta copias puntuales."""
+
+    def setUp(self):
+        self.spec = _load_synthetic_string_numeric_spec()
+
+    # -- conversions[]: str / wstr ---------------------------------------
+    def test_wstr_conversion_with_length_is_accepted(self):
+        self.assertEqual(validate_spec(self.spec, PROJECT_CONTEXT), [])
+
+    def test_wstr_conversion_without_target_length_is_rejected(self):
+        spec = copy.deepcopy(self.spec)
+        del spec["data_flow"]["transformations"][0]["conversions"][0]["target_length"]
+        errors = validate_spec(spec, PROJECT_CONTEXT)
+        self.assertTrue(any("target_length" in e for e in errors))
+
+    def test_str_conversion_with_length_and_code_page_is_accepted(self):
+        spec = copy.deepcopy(self.spec)
+        conv = spec["data_flow"]["transformations"][0]["conversions"][0]
+        conv["target_type"] = "str"
+        conv["target_code_page"] = 1252
+        self.assertEqual(validate_spec(spec, PROJECT_CONTEXT), [])
+
+    def test_str_conversion_without_target_length_is_rejected(self):
+        spec = copy.deepcopy(self.spec)
+        conv = spec["data_flow"]["transformations"][0]["conversions"][0]
+        conv["target_type"] = "str"
+        conv["target_code_page"] = 1252
+        del conv["target_length"]
+        errors = validate_spec(spec, PROJECT_CONTEXT)
+        self.assertTrue(any("target_length" in e for e in errors))
+
+    def test_str_conversion_without_target_code_page_is_rejected(self):
+        spec = copy.deepcopy(self.spec)
+        conv = spec["data_flow"]["transformations"][0]["conversions"][0]
+        conv["target_type"] = "str"
+        # target_length ya esta presente (heredado del wstr original);
+        # falta unicamente target_code_page.
+        errors = validate_spec(spec, PROJECT_CONTEXT)
+        self.assertTrue(any("target_code_page" in e for e in errors))
+
+    # -- conversions[]: numeric -------------------------------------------
+    def test_numeric_conversion_target_with_precision_and_scale_is_accepted(self):
+        spec = copy.deepcopy(self.spec)
+        spec["data_flow"]["source"]["columns"].append(
+            {"name": "Extra_Numeric_Origen", "data_type": "str", "length": 12, "code_page": 1252}
+        )
+        spec["data_flow"]["transformations"][0]["conversions"].append(
+            {
+                "input": "Extra_Numeric_Origen",
+                "output": "Extra_Numeric_Sal",
+                "target_type": "numeric",
+                "target_precision": 18,
+                "target_scale": 4,
+            }
+        )
+        spec["data_flow"]["destination"]["mappings"].append(
+            {
+                "source": "Extra_Numeric_Sal",
+                "target": "ExtraNumeric",
+                "target_data_type": "numeric",
+                "target_precision": 18,
+                "target_scale": 4,
+            }
+        )
+        self.assertEqual(validate_spec(spec, PROJECT_CONTEXT), [])
+
+    def test_numeric_conversion_target_missing_precision_is_rejected(self):
+        spec = copy.deepcopy(self.spec)
+        spec["data_flow"]["source"]["columns"].append(
+            {"name": "Extra_Numeric_Origen", "data_type": "str", "length": 12, "code_page": 1252}
+        )
+        spec["data_flow"]["transformations"][0]["conversions"].append(
+            {
+                "input": "Extra_Numeric_Origen",
+                "output": "Extra_Numeric_Sal",
+                "target_type": "numeric",
+                "target_scale": 4,
+            }
+        )
+        errors = validate_spec(spec, PROJECT_CONTEXT)
+        self.assertTrue(any("target_precision" in e for e in errors))
+
+    def test_numeric_conversion_target_missing_scale_is_rejected(self):
+        spec = copy.deepcopy(self.spec)
+        spec["data_flow"]["source"]["columns"].append(
+            {"name": "Extra_Numeric_Origen", "data_type": "str", "length": 12, "code_page": 1252}
+        )
+        spec["data_flow"]["transformations"][0]["conversions"].append(
+            {
+                "input": "Extra_Numeric_Origen",
+                "output": "Extra_Numeric_Sal",
+                "target_type": "numeric",
+                "target_precision": 18,
+            }
+        )
+        errors = validate_spec(spec, PROJECT_CONTEXT)
+        self.assertTrue(any("target_scale" in e for e in errors))
+
+    # -- source.columns[]: numeric ----------------------------------------
+    def test_numeric_source_column_with_precision_and_scale_is_accepted(self):
+        # Mto_Evento y Num_Cambio ya estan en el spec sintetico base.
+        self.assertEqual(validate_spec(self.spec, PROJECT_CONTEXT), [])
+
+    def test_numeric_source_column_missing_precision_is_rejected(self):
+        spec = copy.deepcopy(self.spec)
+        col = next(
+            c for c in spec["data_flow"]["source"]["columns"] if c["name"] == "Mto_Evento"
+        )
+        del col["precision"]
+        errors = validate_spec(spec, PROJECT_CONTEXT)
+        self.assertTrue(any("'precision'" in e for e in errors))
+
+    def test_numeric_source_column_missing_scale_is_rejected(self):
+        spec = copy.deepcopy(self.spec)
+        col = next(
+            c for c in spec["data_flow"]["source"]["columns"] if c["name"] == "Num_Cambio"
+        )
+        del col["scale"]
+        errors = validate_spec(spec, PROJECT_CONTEXT)
+        self.assertTrue(any("'scale'" in e for e in errors))
+
+    # -- destination.mappings[]: numeric -----------------------------------
+    def test_numeric_destination_mapping_with_precision_and_scale_is_accepted(self):
+        # Mto_Evento y Num_Cambio ya estan mapeados en el spec sintetico base.
+        self.assertEqual(validate_spec(self.spec, PROJECT_CONTEXT), [])
+
+    def test_numeric_destination_mapping_missing_precision_is_rejected(self):
+        spec = copy.deepcopy(self.spec)
+        mapping = next(
+            m
+            for m in spec["data_flow"]["destination"]["mappings"]
+            if m["source"] == "Mto_Evento"
+        )
+        del mapping["target_precision"]
+        errors = validate_spec(spec, PROJECT_CONTEXT)
+        self.assertTrue(any("target_precision" in e for e in errors))
+
+    def test_numeric_destination_mapping_missing_scale_is_rejected(self):
+        spec = copy.deepcopy(self.spec)
+        mapping = next(
+            m
+            for m in spec["data_flow"]["destination"]["mappings"]
+            if m["source"] == "Num_Cambio"
+        )
+        del mapping["target_scale"]
+        errors = validate_spec(spec, PROJECT_CONTEXT)
+        self.assertTrue(any("target_scale" in e for e in errors))
+
+
+class AccessModeTests(unittest.TestCase):
+    """
+    Gap confirmado de OLE DB Destination.AccessMode (Campanias real=0,
+    PagosYRecaudaciones real=3, template=0, generator no lo sobrescribia).
+    'access_mode' es OPCIONAL en data_flow.destination: ausente preserva el
+    valor del template; presente sobrescribe la property "AccessMode". Solo
+    se valida el TIPO (entero >= 0), no un enum cerrado -- ver
+    generator/spec_validator.py.
+    """
+
+    def setUp(self):
+        self.campanias_spec = _load_spec()
+        self.string_numeric_spec = _load_synthetic_string_numeric_spec()
+
+    # -- Campanias: sin access_mode en el spec -> se preserva el del template --
+    def test_campanias_spec_does_not_declare_access_mode(self):
+        self.assertNotIn("access_mode", self.campanias_spec["data_flow"]["destination"])
+
+    def test_campanias_generated_preserves_access_mode_0_from_template(self):
+        tmp_dir = tempfile.mkdtemp(prefix="ssis_generator_access_mode_campanias_")
+        try:
+            output_path = os.path.join(tmp_dir, "CampaniasAccessMode.dtsx")
+            generate(self.campanias_spec, PROJECT_CONTEXT, TEMPLATE_PATH, output_path)
+            tree = ET.parse(output_path)
+            dest = next(
+                c
+                for c in tree.getroot().iter("component")
+                if c.get("componentClassID") == "Microsoft.OLEDBDestination"
+            )
+            access_mode = next(
+                p.text for p in dest.find("properties").findall("property")
+                if p.get("name") == "AccessMode"
+            )
+            self.assertEqual(access_mode, "0")
+        finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    # -- string/numeric sintetico: access_mode=3 sobrescribe correctamente --
+    def test_string_numeric_spec_declares_access_mode_3(self):
+        self.assertEqual(
+            self.string_numeric_spec["data_flow"]["destination"]["access_mode"], 3
+        )
+
+    def test_string_numeric_generated_has_access_mode_3(self):
+        tmp_dir = tempfile.mkdtemp(prefix="ssis_generator_access_mode_synthetic_")
+        try:
+            output_path = os.path.join(tmp_dir, "SyntheticAccessMode.dtsx")
+            generate(self.string_numeric_spec, PROJECT_CONTEXT, TEMPLATE_PATH, output_path)
+            tree = ET.parse(output_path)
+            dest = next(
+                c
+                for c in tree.getroot().iter("component")
+                if c.get("componentClassID") == "Microsoft.OLEDBDestination"
+            )
+            access_mode = next(
+                p.text for p in dest.find("properties").findall("property")
+                if p.get("name") == "AccessMode"
+            )
+            self.assertEqual(access_mode, "3")
+        finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    # -- validator: tipos/valores invalidos rechazados --------------------
+    def test_access_mode_as_string_is_rejected(self):
+        spec = copy.deepcopy(self.string_numeric_spec)
+        spec["data_flow"]["destination"]["access_mode"] = "3"
+        errors = validate_spec(spec, PROJECT_CONTEXT)
+        self.assertTrue(any("access_mode" in e for e in errors))
+
+    def test_access_mode_negative_is_rejected(self):
+        spec = copy.deepcopy(self.string_numeric_spec)
+        spec["data_flow"]["destination"]["access_mode"] = -1
+        errors = validate_spec(spec, PROJECT_CONTEXT)
+        self.assertTrue(any("access_mode" in e for e in errors))
+
+    def test_access_mode_float_is_rejected(self):
+        spec = copy.deepcopy(self.string_numeric_spec)
+        spec["data_flow"]["destination"]["access_mode"] = 3.0
+        errors = validate_spec(spec, PROJECT_CONTEXT)
+        self.assertTrue(any("access_mode" in e for e in errors))
+
+    def test_access_mode_bool_is_rejected(self):
+        # bool es subclase de int en Python -- debe rechazarse explicitamente,
+        # igual criterio que _positive_int/_non_negative_int en el resto del
+        # modulo (ver generator/spec_validator.py).
+        spec = copy.deepcopy(self.string_numeric_spec)
+        spec["data_flow"]["destination"]["access_mode"] = True
+        errors = validate_spec(spec, PROJECT_CONTEXT)
+        self.assertTrue(any("access_mode" in e for e in errors))
+
+    def test_access_mode_zero_is_accepted(self):
+        spec = copy.deepcopy(self.string_numeric_spec)
+        spec["data_flow"]["destination"]["access_mode"] = 0
+        self.assertEqual(validate_spec(spec, PROJECT_CONTEXT), [])
+
+    def test_access_mode_omitted_is_accepted(self):
+        spec = copy.deepcopy(self.string_numeric_spec)
+        del spec["data_flow"]["destination"]["access_mode"]
+        self.assertEqual(validate_spec(spec, PROJECT_CONTEXT), [])
 
 
 if __name__ == "__main__":

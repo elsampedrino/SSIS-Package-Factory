@@ -1,0 +1,267 @@
+<?xml version='1.0' encoding='utf-8'?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts" DTS:refId="Package" DTS:CreationDate="8/12/2026 3:33:10 PM" DTS:CreationName="Microsoft.Package" DTS:CreatorComputerName="1187PC266" DTS:CreatorName="CCBA\P075986" DTS:DTSID="{29545E54-75DF-470B-BBA9-B469A6203BD8}" DTS:ExecutableType="Microsoft.Package" DTS:LastModifiedProductVersion="17.0.1010.2" DTS:LocaleID="11274" DTS:ObjectName="SyntheticStringAndNumericConversion" DTS:PackageType="5" DTS:ProtectionLevel="2" DTS:VersionBuild="16" DTS:VersionGUID="{DD9201E2-4CA2-4B44-9AEC-DC6C6A9DE5C8}">
+  <DTS:Property DTS:Name="PackageFormatVersion">8</DTS:Property>
+  <DTS:Variables />
+  <DTS:Executables>
+    <DTS:Executable DTS:refId="Package\Flujo String And Numeric" DTS:CreationName="Microsoft.Pipeline" DTS:Description="Flujo String And Numeric" DTS:DTSID="{0B5F688D-95A3-4D11-B32F-156C5588C3C4}" DTS:ExecutableType="Microsoft.Pipeline" DTS:LocaleID="-1" DTS:ObjectName="Flujo String And Numeric" DTS:TaskContact="Performs high-performance data extraction, transformation and loading;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <pipeline version="1">
+          <components>
+            <component refId="Package\Flujo String And Numeric\Conversión de datos" componentClassID="Microsoft.DataConvert" contactInfo="Conversión de datos;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; Todos los derechos reservados; http://www.microsoft.com/sql/support;0" description="Conversión de datos" name="Conversión de datos" usesDispositions="true">
+              <inputs>
+                <input refId="Package\Flujo String And Numeric\Conversión de datos.Inputs[Entrada de conversión de datos]" name="Entrada de conversión de datos">
+                  <inputColumns>
+                    <inputColumn refId="Package\Flujo String And Numeric\Conversión de datos.Inputs[Entrada de conversión de datos].Columns[Id_Evento]" cachedCodepage="1252" cachedDataType="str" cachedLength="20" cachedName="Id_Evento" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Id_Evento]" />
+                    <inputColumn refId="Package\Flujo String And Numeric\Conversión de datos.Inputs[Entrada de conversión de datos].Columns[Cod_Identif_Tributaria]" cachedCodepage="1252" cachedDataType="str" cachedLength="10" cachedName="Cod_Identif_Tributaria" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Cod_Identif_Tributaria]" />
+                    <inputColumn refId="Package\Flujo String And Numeric\Conversión de datos.Inputs[Entrada de conversión de datos].Columns[Num_Identif_Tributaria]" cachedCodepage="1252" cachedDataType="str" cachedLength="20" cachedName="Num_Identif_Tributaria" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Num_Identif_Tributaria]" />
+                    <inputColumn refId="Package\Flujo String And Numeric\Conversión de datos.Inputs[Entrada de conversión de datos].Columns[Desc_Tipo_Impuesto]" cachedCodepage="1252" cachedDataType="str" cachedLength="255" cachedName="Desc_Tipo_Impuesto" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Desc_Tipo_Impuesto]" />
+                    <inputColumn refId="Package\Flujo String And Numeric\Conversión de datos.Inputs[Entrada de conversión de datos].Columns[Desc_Movimiento_Trx]" cachedCodepage="1252" cachedDataType="str" cachedLength="100" cachedName="Desc_Movimiento_Trx" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Desc_Movimiento_Trx]" />
+                    <inputColumn refId="Package\Flujo String And Numeric\Conversión de datos.Inputs[Entrada de conversión de datos].Columns[Cod_Moneda]" cachedCodepage="1252" cachedDataType="str" cachedLength="3" cachedName="Cod_Moneda" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Cod_Moneda]" />
+                  </inputColumns>
+                  <externalMetadataColumns />
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de conversión de datos]" exclusionGroup="1" name="Salida de conversión de datos" synchronousInputId="Package\Flujo String And Numeric\Conversión de datos.Inputs[Entrada de conversión de datos]">
+                  <outputColumns>
+                    <outputColumn refId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de conversión de datos].Columns[Id_Evento_Sal]" dataType="wstr" errorOrTruncationOperation="Conversión" errorRowDisposition="FailComponent" length="20" lineageId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de conversión de datos].Columns[Id_Evento_Sal]" name="Id_Evento_Sal" truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property containsID="true" dataType="System.Int32" description="Especifica la columna de entrada usada como origen de datos para la conversión." name="SourceInputColumnLineageID">#{Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Id_Evento]}</property>
+                        <property dataType="System.Boolean" description="Indica si la columna usa las rutinas de análisis más rápidas independientes de la configuración regional." name="FastParse">false</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn refId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de conversión de datos].Columns[Cod_Identif_Tributaria_Sal]" dataType="wstr" errorOrTruncationOperation="Conversión" errorRowDisposition="FailComponent" length="10" lineageId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de conversión de datos].Columns[Cod_Identif_Tributaria_Sal]" name="Cod_Identif_Tributaria_Sal" truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property containsID="true" dataType="System.Int32" description="Especifica la columna de entrada usada como origen de datos para la conversión." name="SourceInputColumnLineageID">#{Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Cod_Identif_Tributaria]}</property>
+                        <property dataType="System.Boolean" description="Indica si la columna usa las rutinas de análisis más rápidas independientes de la configuración regional." name="FastParse">false</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn refId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de conversión de datos].Columns[Num_Identif_Tributaria_Sal]" dataType="wstr" errorOrTruncationOperation="Conversión" errorRowDisposition="FailComponent" length="20" lineageId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de conversión de datos].Columns[Num_Identif_Tributaria_Sal]" name="Num_Identif_Tributaria_Sal" truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property containsID="true" dataType="System.Int32" description="Especifica la columna de entrada usada como origen de datos para la conversión." name="SourceInputColumnLineageID">#{Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Num_Identif_Tributaria]}</property>
+                        <property dataType="System.Boolean" description="Indica si la columna usa las rutinas de análisis más rápidas independientes de la configuración regional." name="FastParse">false</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn refId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de conversión de datos].Columns[Desc_Tipo_Impuesto_Sal]" dataType="wstr" errorOrTruncationOperation="Conversión" errorRowDisposition="FailComponent" length="255" lineageId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de conversión de datos].Columns[Desc_Tipo_Impuesto_Sal]" name="Desc_Tipo_Impuesto_Sal" truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property containsID="true" dataType="System.Int32" description="Especifica la columna de entrada usada como origen de datos para la conversión." name="SourceInputColumnLineageID">#{Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Desc_Tipo_Impuesto]}</property>
+                        <property dataType="System.Boolean" description="Indica si la columna usa las rutinas de análisis más rápidas independientes de la configuración regional." name="FastParse">false</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn refId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de conversión de datos].Columns[Desc_Movimiento_Trx_Sal]" dataType="wstr" errorOrTruncationOperation="Conversión" errorRowDisposition="FailComponent" length="100" lineageId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de conversión de datos].Columns[Desc_Movimiento_Trx_Sal]" name="Desc_Movimiento_Trx_Sal" truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property containsID="true" dataType="System.Int32" description="Especifica la columna de entrada usada como origen de datos para la conversión." name="SourceInputColumnLineageID">#{Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Desc_Movimiento_Trx]}</property>
+                        <property dataType="System.Boolean" description="Indica si la columna usa las rutinas de análisis más rápidas independientes de la configuración regional." name="FastParse">false</property>
+                      </properties>
+                    </outputColumn>
+                    <outputColumn refId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de conversión de datos].Columns[Cod_Moneda_Sal]" dataType="wstr" errorOrTruncationOperation="Conversión" errorRowDisposition="FailComponent" length="3" lineageId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de conversión de datos].Columns[Cod_Moneda_Sal]" name="Cod_Moneda_Sal" truncationRowDisposition="FailComponent">
+                      <properties>
+                        <property containsID="true" dataType="System.Int32" description="Especifica la columna de entrada usada como origen de datos para la conversión." name="SourceInputColumnLineageID">#{Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Cod_Moneda]}</property>
+                        <property dataType="System.Boolean" description="Indica si la columna usa las rutinas de análisis más rápidas independientes de la configuración regional." name="FastParse">false</property>
+                      </properties>
+                    </outputColumn>
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+                <output refId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de error de conversión de datos]" exclusionGroup="1" isErrorOut="true" name="Salida de error de conversión de datos" synchronousInputId="Package\Flujo String And Numeric\Conversión de datos.Inputs[Entrada de conversión de datos]">
+                  <outputColumns>
+                    <outputColumn refId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de error de conversión de datos].Columns[ErrorCode]" dataType="i4" lineageId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de error de conversión de datos].Columns[ErrorCode]" name="ErrorCode" specialFlags="1" />
+                    <outputColumn refId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de error de conversión de datos].Columns[ErrorColumn]" dataType="i4" lineageId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de error de conversión de datos].Columns[ErrorColumn]" name="ErrorColumn" specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\Flujo String And Numeric\Destino SQL" componentClassID="Microsoft.OLEDBDestination" contactInfo="Destino de OLE DB;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; Todos los derechos reservados; http://www.microsoft.com/sql/support;4" description="Destino SQL" name="Destino SQL" usesDispositions="true" version="4">
+              <properties>
+                <property dataType="System.Int32" description="Número de segundos antes de que se agote el tiempo de espera de un comando. Un valor de 0 indica un tiempo de espera infinito." name="CommandTimeout">0</property>
+                <property dataType="System.String" description="Especifica el nombre del objeto de base de datos usado para abrir un conjunto de filas." name="OpenRowset">[staging].[SinteticoStringNumeric]</property>
+                <property dataType="System.String" description="Especifica la variable que contiene el nombre del objeto de base de datos usado para abrir un conjunto de filas." name="OpenRowsetVariable" />
+                <property dataType="System.String" description="Comando SQL para ejecutar." name="SqlCommand" UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor" />
+                <property dataType="System.Int32" description="Especifica la página de códigos de columna para utilizar cuando la información de página de códigos no está disponible en el origen de datos." name="DefaultCodePage">1252</property>
+                <property dataType="System.Boolean" description="Fuerza el uso del valor de la propiedad DefaultCodePage al describir datos de caracteres." name="AlwaysUseDefaultCodePage">false</property>
+                <property dataType="System.Int32" description="Especifica el modo utilizado para obtener acceso a la base de datos." name="AccessMode" typeConverter="AccessMode">3</property>
+                <property dataType="System.Boolean" description="Indica si los valores proporcionados para columnas de identidad se van a copiar al destino. Si es False, los valores de las columnas de identidad se generan automáticamente en el destino. Solo se aplica si está activada la carga rápida." name="FastLoadKeepIdentity">false</property>
+                <property dataType="System.Boolean" description="Indica si las columnas que contienen NULL tendrán NULL insertado en el destino. Si es False, las columnas que contienen NULL tendrán sus valores predeterminados insertados en el destino. Solo se aplica si está activada la carga rápida." name="FastLoadKeepNulls">false</property>
+                <property dataType="System.String" description="Especifica opciones para usar con la carga rápida. Solo se aplica si está activada la carga rápida." name="FastLoadOptions">TABLOCK,CHECK_CONSTRAINTS</property>
+                <property dataType="System.Int32" description="Especifica cuándo se emiten confirmaciones durante la inserción de datos. El valor 0 especifica que se emitirá una confirmación al final de la inserción de datos. Solo se aplica si está activada la carga rápida." name="FastLoadMaxInsertCommitSize">2147483647</property>
+              </properties>
+              <connections>
+                <connection refId="Package\Flujo String And Numeric\Destino SQL.Connections[OleDbConnection]" connectionManagerID="{A4577B83-2782-42EF-8C00-C1D238C25009}:external" connectionManagerRefId="Project.ConnectionManagers[cnxSQL]" description="La conexión de tiempo de ejecución OLE DB usada para obtener acceso a la base de datos." name="OleDbConnection" />
+              </connections>
+              <inputs>
+                <input refId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB]" errorOrTruncationOperation="Insertar" errorRowDisposition="FailComponent" hasSideEffects="true" name="Entrada de destino de OLE DB">
+                  <inputColumns>
+                    <inputColumn refId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].Columns[Id_Evento_Sal]" cachedDataType="wstr" cachedLength="20" cachedName="Id_Evento_Sal" externalMetadataColumnId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].ExternalColumns[Id_Evento]" lineageId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de conversión de datos].Columns[Id_Evento_Sal]" />
+                    <inputColumn refId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].Columns[Cod_Identif_Tributaria_Sal]" cachedDataType="wstr" cachedLength="10" cachedName="Cod_Identif_Tributaria_Sal" externalMetadataColumnId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].ExternalColumns[Cod_Identif_Tributaria]" lineageId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de conversión de datos].Columns[Cod_Identif_Tributaria_Sal]" />
+                    <inputColumn refId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].Columns[Num_Identif_Tributaria_Sal]" cachedDataType="wstr" cachedLength="20" cachedName="Num_Identif_Tributaria_Sal" externalMetadataColumnId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].ExternalColumns[Num_Identif_Tributaria]" lineageId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de conversión de datos].Columns[Num_Identif_Tributaria_Sal]" />
+                    <inputColumn refId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].Columns[Desc_Tipo_Impuesto_Sal]" cachedDataType="wstr" cachedLength="255" cachedName="Desc_Tipo_Impuesto_Sal" externalMetadataColumnId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].ExternalColumns[Desc_Tipo_Impuesto]" lineageId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de conversión de datos].Columns[Desc_Tipo_Impuesto_Sal]" />
+                    <inputColumn refId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].Columns[Desc_Movimiento_Trx_Sal]" cachedDataType="wstr" cachedLength="100" cachedName="Desc_Movimiento_Trx_Sal" externalMetadataColumnId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].ExternalColumns[Desc_Movimiento_Trx]" lineageId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de conversión de datos].Columns[Desc_Movimiento_Trx_Sal]" />
+                    <inputColumn refId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].Columns[Cod_Moneda_Sal]" cachedDataType="wstr" cachedLength="3" cachedName="Cod_Moneda_Sal" externalMetadataColumnId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].ExternalColumns[Cod_Moneda]" lineageId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de conversión de datos].Columns[Cod_Moneda_Sal]" />
+                    <inputColumn refId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].Columns[Mto_Evento]" cachedDataType="numeric" cachedPrecision="15" cachedScale="2" cachedName="Mto_Evento" externalMetadataColumnId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].ExternalColumns[Mto_Evento]" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Mto_Evento]" />
+                    <inputColumn refId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].Columns[Num_Cambio]" cachedDataType="numeric" cachedPrecision="9" cachedScale="5" cachedName="Num_Cambio" externalMetadataColumnId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].ExternalColumns[Num_Cambio]" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Num_Cambio]" />
+                  </inputColumns>
+                  <externalMetadataColumns isUsed="True">
+                    <externalMetadataColumn refId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].ExternalColumns[Id_Evento]" dataType="wstr" length="20" name="Id_Evento" />
+                    <externalMetadataColumn refId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].ExternalColumns[Cod_Identif_Tributaria]" dataType="wstr" length="10" name="Cod_Identif_Tributaria" />
+                    <externalMetadataColumn refId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].ExternalColumns[Num_Identif_Tributaria]" dataType="wstr" length="20" name="Num_Identif_Tributaria" />
+                    <externalMetadataColumn refId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].ExternalColumns[Desc_Tipo_Impuesto]" dataType="wstr" length="255" name="Desc_Tipo_Impuesto" />
+                    <externalMetadataColumn refId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].ExternalColumns[Desc_Movimiento_Trx]" dataType="wstr" length="100" name="Desc_Movimiento_Trx" />
+                    <externalMetadataColumn refId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].ExternalColumns[Cod_Moneda]" dataType="wstr" length="3" name="Cod_Moneda" />
+                    <externalMetadataColumn refId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].ExternalColumns[Mto_Evento]" dataType="numeric" precision="15" scale="2" name="Mto_Evento" />
+                    <externalMetadataColumn refId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB].ExternalColumns[Num_Cambio]" dataType="numeric" precision="9" scale="5" name="Num_Cambio" />
+                  </externalMetadataColumns>
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\Flujo String And Numeric\Destino SQL.Outputs[Salida de error de destino de OLE DB]" exclusionGroup="1" isErrorOut="true" name="Salida de error de destino de OLE DB" synchronousInputId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB]">
+                  <outputColumns>
+                    <outputColumn refId="Package\Flujo String And Numeric\Destino SQL.Outputs[Salida de error de destino de OLE DB].Columns[ErrorCode]" dataType="i4" lineageId="Package\Flujo String And Numeric\Destino SQL.Outputs[Salida de error de destino de OLE DB].Columns[ErrorCode]" name="ErrorCode" specialFlags="1" />
+                    <outputColumn refId="Package\Flujo String And Numeric\Destino SQL.Outputs[Salida de error de destino de OLE DB].Columns[ErrorColumn]" dataType="i4" lineageId="Package\Flujo String And Numeric\Destino SQL.Outputs[Salida de error de destino de OLE DB].Columns[ErrorColumn]" name="ErrorColumn" specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\Flujo String And Numeric\Origen Teradata" componentClassID="Microsoft.SSISTeradataSrc" contactInfo="Teradata Source;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; Todos los derechos reservados; http://www.microsoft.com/sql/support;1" description="Origen Teradata" name="Origen Teradata" usesDispositions="true" version="1">
+              <properties>
+                <property dataType="System.String" description="The name of the table to be fetched." expressionType="Notify" name="TableName" />
+                <property dataType="System.String" description="The SQL command to be executed." expressionType="Notify" name="SqlCommand" UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor, Microsoft.DataTransformationServices.Controls, Version=17.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91">SELECT Id_Evento, Cod_Identif_Tributaria, Num_Identif_Tributaria, Desc_Tipo_Impuesto, Desc_Movimiento_Trx, Cod_Moneda, Mto_Evento, Num_Cambio FROM TABLA_SINTETICA</property>
+                <property dataType="System.Int32" description="Data transfer block size." expressionType="Notify" name="BlockSize">1048576</property>
+                <property dataType="System.Int32" description="Maximum size of a data buffer when 'Buffer mode' is applied. Value must be large enough to hold at least one data row (including 8 overhead bytes per row at most)." expressionType="Notify" name="BufferMaxSize">16775552</property>
+                <property dataType="System.Boolean" description="Indicates which type of Load method is used. True stands for 'Progress Buffered Rows'. False indicates 'Progress Row By Row'." expressionType="Notify" name="BufferMode">true</property>
+                <property dataType="System.Boolean" description="SQL requests and responses data encryption." expressionType="Notify" name="DataEncryption">false</property>
+                <property dataType="System.Int32" description="The code page to use when code page information is unavailable from the data source." expressionType="Notify" name="DefaultCodePage">1252</property>
+                <property dataType="System.String" description="A trace file name. Setting a value for this property enables TPT detailed tracing." expressionType="Notify" name="DetailedTracingFile" />
+                <property dataType="System.Int32" description="Specifies the types of diagnostic messages written by each instance of the dirver to an external log file. The diagnostic trace function provides more detailed information (including the version number) in the log file to aid in problem tracking and diagnosis." name="DetailedTracingLevel" typeConverter="DetailedTracingLevel">1</property>
+                <property dataType="System.Boolean" description="Whether or not to discard large rows." expressionType="Notify" name="DiscardLargeRow">false</property>
+                <property dataType="System.Boolean" description="Use maximal character buffers allocation factor. Used when 'Export Width Table ID' = 'Maximum Defaults'." expressionType="Notify" name="ExtendedStringColumnsAllocation">false</property>
+                <property dataType="System.Int32" description="Maximum row size (kb) it can support in export. Valid values are: 64, 1024." name="JobMaxRowSize" typeConverter="JobMaxRowSize">64</property>
+                <property dataType="System.Int32" description="Maximum number of sessions to log on." expressionType="Notify" name="MaxSessions">8</property>
+                <property dataType="System.Int32" description="Minimum number of sessions required." expressionType="Notify" name="MinSessions">4</property>
+                <property dataType="System.String" description="A user-defined query band expression." expressionType="Notify" name="QueryBandSessionInfo" />
+                <property dataType="System.Int32" description="Specifies whether to use spool or not while running the current Export job." name="SpoolMode" typeConverter="SpoolMode">0</property>
+                <property dataType="System.Int32" description="The number of hours to continue trying to log on when the maximum number of load jobs is already running on the Teradata Database." expressionType="Notify" name="TenacityHours">4</property>
+                <property dataType="System.Int32" description="The number of minutes to pause before retrying to log on when the maximum number of load jobs is already running on the Teradata Database." expressionType="Notify" name="TenacitySleep">6</property>
+                <property dataType="System.Boolean" description="Whether to allow Pass Through Characters (PTCs) to be exported from Teradata." expressionType="Notify" name="UnicodePassThrough">false</property>
+                <property dataType="System.Int32" description="The mode used to access the database." name="AccessMode" typeConverter="AccessMode">1</property>
+              </properties>
+              <connections>
+                <connection refId="Package\Flujo String And Numeric\Origen Teradata.Connections[TeradataConnection]" connectionManagerID="{0D3E96D0-3B96-4AF7-A685-079D9D6EDE96}:external" connectionManagerRefId="Project.ConnectionManagers[cnxTeradata]" description="The Teradata runtime connection used to access the database." name="TeradataConnection" />
+              </connections>
+              <outputs>
+                <output refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output]" errorRowDisposition="FailComponent" name="Teradata Source Output" truncationRowDisposition="FailComponent">
+                  <outputColumns>
+                    <outputColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Id_Evento]" dataType="str" externalMetadataColumnId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].ExternalColumns[Id_Evento]" length="20" codePage="1252" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Id_Evento]" name="Id_Evento" />
+                    <outputColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Cod_Identif_Tributaria]" dataType="str" externalMetadataColumnId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].ExternalColumns[Cod_Identif_Tributaria]" length="10" codePage="1252" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Cod_Identif_Tributaria]" name="Cod_Identif_Tributaria" />
+                    <outputColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Num_Identif_Tributaria]" dataType="str" externalMetadataColumnId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].ExternalColumns[Num_Identif_Tributaria]" length="20" codePage="1252" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Num_Identif_Tributaria]" name="Num_Identif_Tributaria" />
+                    <outputColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Desc_Tipo_Impuesto]" dataType="str" externalMetadataColumnId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].ExternalColumns[Desc_Tipo_Impuesto]" length="255" codePage="1252" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Desc_Tipo_Impuesto]" name="Desc_Tipo_Impuesto" />
+                    <outputColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Desc_Movimiento_Trx]" dataType="str" externalMetadataColumnId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].ExternalColumns[Desc_Movimiento_Trx]" length="100" codePage="1252" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Desc_Movimiento_Trx]" name="Desc_Movimiento_Trx" />
+                    <outputColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Cod_Moneda]" dataType="str" externalMetadataColumnId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].ExternalColumns[Cod_Moneda]" length="3" codePage="1252" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Cod_Moneda]" name="Cod_Moneda" />
+                    <outputColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Mto_Evento]" dataType="numeric" externalMetadataColumnId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].ExternalColumns[Mto_Evento]" precision="15" scale="2" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Mto_Evento]" name="Mto_Evento" />
+                    <outputColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Num_Cambio]" dataType="numeric" externalMetadataColumnId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].ExternalColumns[Num_Cambio]" precision="9" scale="5" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].Columns[Num_Cambio]" name="Num_Cambio" />
+                  </outputColumns>
+                  <externalMetadataColumns isUsed="True">
+                    <externalMetadataColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].ExternalColumns[Id_Evento]" dataType="str" length="20" codePage="1252" name="Id_Evento" />
+                    <externalMetadataColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].ExternalColumns[Cod_Identif_Tributaria]" dataType="str" length="10" codePage="1252" name="Cod_Identif_Tributaria" />
+                    <externalMetadataColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].ExternalColumns[Num_Identif_Tributaria]" dataType="str" length="20" codePage="1252" name="Num_Identif_Tributaria" />
+                    <externalMetadataColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].ExternalColumns[Desc_Tipo_Impuesto]" dataType="str" length="255" codePage="1252" name="Desc_Tipo_Impuesto" />
+                    <externalMetadataColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].ExternalColumns[Desc_Movimiento_Trx]" dataType="str" length="100" codePage="1252" name="Desc_Movimiento_Trx" />
+                    <externalMetadataColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].ExternalColumns[Cod_Moneda]" dataType="str" length="3" codePage="1252" name="Cod_Moneda" />
+                    <externalMetadataColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].ExternalColumns[Mto_Evento]" dataType="numeric" precision="15" scale="2" name="Mto_Evento" />
+                    <externalMetadataColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output].ExternalColumns[Num_Cambio]" dataType="numeric" precision="9" scale="5" name="Num_Cambio" />
+                  </externalMetadataColumns>
+                </output>
+                <output refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Error Output]" isErrorOut="true" name="Teradata Source Error Output">
+                  <outputColumns>
+                    <outputColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Error Output].Columns[Id_Evento]" dataType="str" length="20" codePage="1252" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Error Output].Columns[Id_Evento]" name="Id_Evento" />
+                    <outputColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Error Output].Columns[Cod_Identif_Tributaria]" dataType="str" length="10" codePage="1252" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Error Output].Columns[Cod_Identif_Tributaria]" name="Cod_Identif_Tributaria" />
+                    <outputColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Error Output].Columns[Num_Identif_Tributaria]" dataType="str" length="20" codePage="1252" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Error Output].Columns[Num_Identif_Tributaria]" name="Num_Identif_Tributaria" />
+                    <outputColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Error Output].Columns[Desc_Tipo_Impuesto]" dataType="str" length="255" codePage="1252" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Error Output].Columns[Desc_Tipo_Impuesto]" name="Desc_Tipo_Impuesto" />
+                    <outputColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Error Output].Columns[Desc_Movimiento_Trx]" dataType="str" length="100" codePage="1252" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Error Output].Columns[Desc_Movimiento_Trx]" name="Desc_Movimiento_Trx" />
+                    <outputColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Error Output].Columns[Cod_Moneda]" dataType="str" length="3" codePage="1252" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Error Output].Columns[Cod_Moneda]" name="Cod_Moneda" />
+                    <outputColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Error Output].Columns[Mto_Evento]" dataType="numeric" precision="15" scale="2" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Error Output].Columns[Mto_Evento]" name="Mto_Evento" />
+                    <outputColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Error Output].Columns[Num_Cambio]" dataType="numeric" precision="9" scale="5" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Error Output].Columns[Num_Cambio]" name="Num_Cambio" />
+                    <outputColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Error Output].Columns[ErrorCode]" dataType="i4" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Error Output].Columns[ErrorCode]" name="ErrorCode" specialFlags="1" />
+                    <outputColumn refId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Error Output].Columns[ErrorColumn]" dataType="i4" lineageId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Error Output].Columns[ErrorColumn]" name="ErrorColumn" specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+          </components>
+          <paths>
+            <path refId="Package\Flujo String And Numeric.Paths[Teradata Source Output]" endId="Package\Flujo String And Numeric\Conversión de datos.Inputs[Entrada de conversión de datos]" name="Teradata Source Output" startId="Package\Flujo String And Numeric\Origen Teradata.Outputs[Teradata Source Output]" />
+            <path refId="Package\Flujo String And Numeric.Paths[Salida de conversión de datos]" endId="Package\Flujo String And Numeric\Destino SQL.Inputs[Entrada de destino de OLE DB]" name="Salida de conversión de datos" startId="Package\Flujo String And Numeric\Conversión de datos.Outputs[Salida de conversión de datos]" />
+          </paths>
+        </pipeline>
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:DesignTimeProperties>&lt;Objects xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" Version="8"&gt;
+  
+  &lt;Package design-time-name="Package"&gt;
+    &lt;LayoutInfo&gt;
+      &lt;GraphLayout Capacity="4"&gt;
+        &lt;NodeLayout Size="180,42" Id="Package\Flujo String And Numeric" TopLeft="163,73" /&gt;
+      &lt;/GraphLayout&gt;
+    &lt;/LayoutInfo&gt;
+  &lt;/Package&gt;
+  &lt;TaskHost design-time-name="Package\Flujo String And Numeric"&gt;
+    &lt;LayoutInfo&gt;
+      &lt;GraphLayout Capacity="8"&gt;
+        &lt;NodeLayout Size="161,42" Id="Package\Flujo String And Numeric\Origen Teradata" TopLeft="239,74" /&gt;
+        &lt;NodeLayout Size="175,42" Id="Package\Flujo String And Numeric\Destino SQL" TopLeft="228,244" /&gt;
+        &lt;NodeLayout Size="180,42" Id="Package\Flujo String And Numeric\Conversión de datos" TopLeft="231,162" /&gt;
+        &lt;EdgeLayout Id="Package\Flujo String And Numeric.Paths[Teradata Source Output]" TopLeft="320.25,116"&gt;
+          &lt;EdgeLayout.Curve&gt;
+            &lt;mssgle:Curve StartConnector="{assembly:Null}" EndConnector="0,46" Start="0,0" End="0,38.5"&gt;
+              &lt;mssgle:Curve.Segments&gt;
+                &lt;mssgle:SegmentCollection Capacity="5"&gt;
+                  &lt;mssgle:LineSegment End="0,38.5" /&gt;
+                &lt;/mssgle:SegmentCollection&gt;
+              &lt;/mssgle:Curve.Segments&gt;
+            &lt;/mssgle:Curve&gt;
+          &lt;/EdgeLayout.Curve&gt;
+          &lt;EdgeLayout.Labels&gt;
+            &lt;EdgeLabelCollection /&gt;
+          &lt;/EdgeLayout.Labels&gt;
+        &lt;/EdgeLayout&gt;
+        &lt;EdgeLayout Id="Package\Flujo String And Numeric.Paths[Salida de conversión de datos]" TopLeft="318.25,204"&gt;
+          &lt;EdgeLayout.Curve&gt;
+            &lt;mssgle:Curve StartConnector="{assembly:Null}" EndConnector="0,40" Start="0,0" End="0,32.5"&gt;
+              &lt;mssgle:Curve.Segments&gt;
+                &lt;mssgle:SegmentCollection Capacity="5"&gt;
+                  &lt;mssgle:LineSegment End="0,32.5" /&gt;
+                &lt;/mssgle:SegmentCollection&gt;
+              &lt;/mssgle:Curve.Segments&gt;
+            &lt;/mssgle:Curve&gt;
+          &lt;/EdgeLayout.Curve&gt;
+          &lt;EdgeLayout.Labels&gt;
+            &lt;EdgeLabelCollection /&gt;
+          &lt;/EdgeLayout.Labels&gt;
+        &lt;/EdgeLayout&gt;
+        &lt;/GraphLayout&gt;
+    &lt;/LayoutInfo&gt;
+  &lt;/TaskHost&gt;
+  &lt;PipelineComponentMetadata design-time-name="Package\Flujo String And Numeric\Origen Teradata"&gt;
+    &lt;Properties&gt;
+      &lt;Property&gt;
+        &lt;Name&gt;DataSourceViewID&lt;/Name&gt;
+      &lt;/Property&gt;
+    &lt;/Properties&gt;
+  &lt;/PipelineComponentMetadata&gt;
+  &lt;PipelineComponentMetadata design-time-name="Package\Flujo String And Numeric\Destino SQL"&gt;
+    &lt;Properties&gt;
+      &lt;Property&gt;
+        &lt;Name&gt;DataSourceViewID&lt;/Name&gt;
+      &lt;/Property&gt;
+      &lt;Property&gt;
+        &lt;Name&gt;TableInfoObjectType&lt;/Name&gt;
+        &lt;Value type="q2:string"&gt;Table&lt;/Value&gt;
+      &lt;/Property&gt;
+    &lt;/Properties&gt;
+  &lt;/PipelineComponentMetadata&gt;
+&lt;/Objects&gt;</DTS:DesignTimeProperties>
+</DTS:Executable>
