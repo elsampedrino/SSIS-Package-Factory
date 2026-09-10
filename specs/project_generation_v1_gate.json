@@ -1,0 +1,50 @@
+{
+  "project": {
+    "parameters": [
+      {
+        "name": "dbTeradataGen",
+        "sensitive": false,
+        "value": "D_DW_TEST"
+      },
+      {
+        "name": "srvTeradataGen",
+        "sensitive": false,
+        "value": "tdtest.example.local"
+      },
+      {
+        "name": "pwTeradataGen",
+        "sensitive": true
+      },
+      {
+        "name": "pwSqlGen",
+        "sensitive": true
+      }
+    ],
+    "connections": [
+      {
+        "name": "cnxTeradataGen",
+        "provider": "teradata",
+        "server": "tdtest.example.local",
+        "database": "D_DW_TEST",
+        "user": "usTestTeradata",
+        "authentication": "TD2",
+        "charset": "ASCII",
+        "retain_same_connection": false,
+        "property_expressions": [
+          {"property": "ServerName", "parameter": "srvTeradataGen"},
+          {"property": "Password", "parameter": "pwTeradataGen"}
+        ]
+      },
+      {
+        "name": "cnxSqlGen",
+        "provider": "oledb",
+        "server": "SRVTESTDB",
+        "catalog": "TestCatalog",
+        "user": "usTestSql",
+        "property_expressions": [
+          {"property": "Password", "parameter": "pwSqlGen"}
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<DTS:ConnectionManager xmlns:DTS="www.microsoft.com/SqlServer/Dts" DTS:ObjectName="cnxTeradataGen" DTS:DTSID="{72750E86-536F-44A1-9C99-7E0D62C89012}" DTS:CreationName="TERADATA">
+  <DTS:PropertyExpression DTS:Name="ServerName">@[$Project::srvTeradataGen]</DTS:PropertyExpression>
+  <DTS:PropertyExpression DTS:Name="Password">@[$Project::pwTeradataGen]</DTS:PropertyExpression>
+  <DTS:ObjectData>
+    <DTS:ConnectionManager>
+      <TeraConnectionString>DBCNAME=tdtest.example.local;UID=usTestTeradata;AUTHENTICATION=TD2;DATABASE=D_DW_TEST;CHARSET=ASCII;DRIVER={Teradata Database ODBC Driver 20.00};LOGINTIMEOUT=20;</TeraConnectionString>
+      <TeraRetain>False</TeraRetain>
+      <TeraInitialCatalog />
+      <TeraServerName>tdtest.example.local</TeraServerName>
+      <TeraUserName>usTestTeradata</TeraUserName>
+      <TeraDatabase>D_DW_TEST</TeraDatabase>
+      <TeraAccount />
+      <TeraAuthentication>TD2</TeraAuthentication>
+      <TeraWinAuthentication>False</TeraWinAuthentication>
+      <TeraUseUTF8CharSet>False</TeraUseUTF8CharSet>
+    </DTS:ConnectionManager>
+  </DTS:ObjectData>
+</DTS:ConnectionManager>

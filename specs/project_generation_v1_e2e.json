@@ -1,0 +1,30 @@
+{
+  "_note": "Spec E2E de GATE MANUAL para project-generation-v1 (Gate B) -- NO productivo. Usa exclusivamente las conexiones generadas por project-generation-v1 (cnxTeradataGen/cnxSqlGen, ver generated_project_v1/) para demostrar que el generador estable TERADATA_TO_SQL v1.1 puede consumir un ProjectContext construido a partir de recursos generados por el nuevo milestone. Mapping directo (sin Data Conversion): los tipos declarados ya son compatibles 1:1. Metadata (server/tabla/columnas) ficticia, estructuralmente valida -- no se afirma que la tabla/query existan realmente.",
+  "package": {
+    "name": "ProjectGenerationV1_E2E"
+  },
+  "data_flow": {
+    "name": "Flujo E2E ProjectGenerationV1",
+    "source": {
+      "type": "teradata",
+      "name": "Origen Teradata",
+      "connection": "cnxTeradataGen",
+      "sql": "SELECT Id_Test, Desc_Test FROM D_TEST.Factory_Test",
+      "columns": [
+        {"name": "Id_Test", "data_type": "i4"},
+        {"name": "Desc_Test", "data_type": "wstr", "length": 100}
+      ]
+    },
+    "transformations": [],
+    "destination": {
+      "type": "ole_db",
+      "name": "Destino SQL",
+      "connection": "cnxSqlGen",
+      "table": "[staging].[Factory_Test]",
+      "mappings": [
+        {"source": "Id_Test", "target": "Id_Test", "target_data_type": "i4"},
+        {"source": "Desc_Test", "target": "Desc_Test", "target_data_type": "wstr", "target_length": 100}
+      ]
+    }
+  }
+}

@@ -1,0 +1,49 @@
+<?xml version='1.0' encoding='utf-8'?>
+<SSIS:Parameters xmlns:SSIS="www.microsoft.com/SqlServer/SSIS">
+  <SSIS:Parameter SSIS:Name="dbTeradataGen">
+    <SSIS:Properties>
+      <SSIS:Property SSIS:Name="ID">{1a215492-516f-44ad-9754-690ec9616db6}</SSIS:Property>
+      <SSIS:Property SSIS:Name="CreationName" />
+      <SSIS:Property SSIS:Name="Description" />
+      <SSIS:Property SSIS:Name="IncludeInDebugDump">0</SSIS:Property>
+      <SSIS:Property SSIS:Name="Required">1</SSIS:Property>
+      <SSIS:Property SSIS:Name="Sensitive">0</SSIS:Property>
+      <SSIS:Property SSIS:Name="Value">D_DW_TEST</SSIS:Property>
+      <SSIS:Property SSIS:Name="DataType">18</SSIS:Property>
+    </SSIS:Properties>
+  </SSIS:Parameter>
+  <SSIS:Parameter SSIS:Name="srvTeradataGen">
+    <SSIS:Properties>
+      <SSIS:Property SSIS:Name="ID">{1f147c56-ec65-46bc-bf1a-d3e47e69e168}</SSIS:Property>
+      <SSIS:Property SSIS:Name="CreationName" />
+      <SSIS:Property SSIS:Name="Description" />
+      <SSIS:Property SSIS:Name="IncludeInDebugDump">0</SSIS:Property>
+      <SSIS:Property SSIS:Name="Required">1</SSIS:Property>
+      <SSIS:Property SSIS:Name="Sensitive">0</SSIS:Property>
+      <SSIS:Property SSIS:Name="Value">tdtest.example.local</SSIS:Property>
+      <SSIS:Property SSIS:Name="DataType">18</SSIS:Property>
+    </SSIS:Properties>
+  </SSIS:Parameter>
+  <SSIS:Parameter SSIS:Name="pwTeradataGen">
+    <SSIS:Properties>
+      <SSIS:Property SSIS:Name="ID">{e855ce76-9e4c-4125-8de4-7b4ee02f1cff}</SSIS:Property>
+      <SSIS:Property SSIS:Name="CreationName" />
+      <SSIS:Property SSIS:Name="Description" />
+      <SSIS:Property SSIS:Name="IncludeInDebugDump">0</SSIS:Property>
+      <SSIS:Property SSIS:Name="Required">1</SSIS:Property>
+      <SSIS:Property SSIS:Name="Sensitive">1</SSIS:Property>
+      <SSIS:Property SSIS:Name="DataType">18</SSIS:Property>
+    </SSIS:Properties>
+  </SSIS:Parameter>
+  <SSIS:Parameter SSIS:Name="pwSqlGen">
+    <SSIS:Properties>
+      <SSIS:Property SSIS:Name="ID">{999a8b30-55dd-43d1-a9ac-b825cc55e33b}</SSIS:Property>
+      <SSIS:Property SSIS:Name="CreationName" />
+      <SSIS:Property SSIS:Name="Description" />
+      <SSIS:Property SSIS:Name="IncludeInDebugDump">0</SSIS:Property>
+      <SSIS:Property SSIS:Name="Required">1</SSIS:Property>
+      <SSIS:Property SSIS:Name="Sensitive">1</SSIS:Property>
+      <SSIS:Property SSIS:Name="DataType">18</SSIS:Property>
+    </SSIS:Properties>
+  </SSIS:Parameter>
+</SSIS:Parameters>

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<DTS:ConnectionManager xmlns:DTS="www.microsoft.com/SqlServer/Dts" DTS:ObjectName="cnxSqlGen" DTS:DTSID="{EE2DBEF1-7740-4205-B071-830F2F2BA5D0}" DTS:CreationName="OLEDB">
+  <DTS:PropertyExpression DTS:Name="Password">@[$Project::pwSqlGen]</DTS:PropertyExpression>
+  <DTS:ObjectData>
+    <DTS:ConnectionManager DTS:ConnectRetryCount="1" DTS:ConnectRetryInterval="5" DTS:ConnectionString="Data Source=SRVTESTDB;User ID=usTestSql;Initial Catalog=TestCatalog;Provider=SQLOLEDB.1;Auto Translate=False;Application Name=SSIS-Factory-{EE2DBEF1-7740-4205-B071-830F2F2BA5D0}cnxSqlGen;" />
+  </DTS:ObjectData>
+</DTS:ConnectionManager>
