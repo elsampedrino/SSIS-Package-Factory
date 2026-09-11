@@ -1,0 +1,85 @@
+<?xml version='1.0' encoding='utf-8'?>
+<SSIS:Parameters xmlns:SSIS="www.microsoft.com/SqlServer/SSIS">
+  <SSIS:Parameter SSIS:Name="srvTeradata">
+    <SSIS:Properties>
+      <SSIS:Property SSIS:Name="ID">{f192f32e-2d48-4b26-b64b-9645652bfc6f}</SSIS:Property>
+      <SSIS:Property SSIS:Name="CreationName" />
+      <SSIS:Property SSIS:Name="Description" />
+      <SSIS:Property SSIS:Name="IncludeInDebugDump">0</SSIS:Property>
+      <SSIS:Property SSIS:Name="Required">1</SSIS:Property>
+      <SSIS:Property SSIS:Name="Sensitive">0</SSIS:Property>
+      <SSIS:Property SSIS:Name="Value">tdtest.example.local</SSIS:Property>
+      <SSIS:Property SSIS:Name="DataType">18</SSIS:Property>
+    </SSIS:Properties>
+  </SSIS:Parameter>
+  <SSIS:Parameter SSIS:Name="dbTeradata">
+    <SSIS:Properties>
+      <SSIS:Property SSIS:Name="ID">{ca80f095-e796-4c5b-bd5b-1c45427573ff}</SSIS:Property>
+      <SSIS:Property SSIS:Name="CreationName" />
+      <SSIS:Property SSIS:Name="Description" />
+      <SSIS:Property SSIS:Name="IncludeInDebugDump">0</SSIS:Property>
+      <SSIS:Property SSIS:Name="Required">1</SSIS:Property>
+      <SSIS:Property SSIS:Name="Sensitive">0</SSIS:Property>
+      <SSIS:Property SSIS:Name="Value">D_DW_TEST</SSIS:Property>
+      <SSIS:Property SSIS:Name="DataType">18</SSIS:Property>
+    </SSIS:Properties>
+  </SSIS:Parameter>
+  <SSIS:Parameter SSIS:Name="usrTeradata">
+    <SSIS:Properties>
+      <SSIS:Property SSIS:Name="ID">{90173c57-5550-4651-a1dc-4563b1ba1185}</SSIS:Property>
+      <SSIS:Property SSIS:Name="CreationName" />
+      <SSIS:Property SSIS:Name="Description" />
+      <SSIS:Property SSIS:Name="IncludeInDebugDump">0</SSIS:Property>
+      <SSIS:Property SSIS:Name="Required">1</SSIS:Property>
+      <SSIS:Property SSIS:Name="Sensitive">0</SSIS:Property>
+      <SSIS:Property SSIS:Name="Value">usTestTeradata</SSIS:Property>
+      <SSIS:Property SSIS:Name="DataType">18</SSIS:Property>
+    </SSIS:Properties>
+  </SSIS:Parameter>
+  <SSIS:Parameter SSIS:Name="pwTeradata">
+    <SSIS:Properties>
+      <SSIS:Property SSIS:Name="ID">{85d9d1fe-4df7-4d88-b51c-5846423904ec}</SSIS:Property>
+      <SSIS:Property SSIS:Name="CreationName" />
+      <SSIS:Property SSIS:Name="Description" />
+      <SSIS:Property SSIS:Name="IncludeInDebugDump">0</SSIS:Property>
+      <SSIS:Property SSIS:Name="Required">1</SSIS:Property>
+      <SSIS:Property SSIS:Name="Sensitive">1</SSIS:Property>
+      <SSIS:Property SSIS:Name="DataType">18</SSIS:Property>
+    </SSIS:Properties>
+  </SSIS:Parameter>
+  <SSIS:Parameter SSIS:Name="srvSRVTESTDB">
+    <SSIS:Properties>
+      <SSIS:Property SSIS:Name="ID">{b2d69a57-23a5-4da4-bc72-c4ca25d9d0fa}</SSIS:Property>
+      <SSIS:Property SSIS:Name="CreationName" />
+      <SSIS:Property SSIS:Name="Description" />
+      <SSIS:Property SSIS:Name="IncludeInDebugDump">0</SSIS:Property>
+      <SSIS:Property SSIS:Name="Required">1</SSIS:Property>
+      <SSIS:Property SSIS:Name="Sensitive">0</SSIS:Property>
+      <SSIS:Property SSIS:Name="Value">SRVTESTDB</SSIS:Property>
+      <SSIS:Property SSIS:Name="DataType">18</SSIS:Property>
+    </SSIS:Properties>
+  </SSIS:Parameter>
+  <SSIS:Parameter SSIS:Name="pwSRVTESTDB">
+    <SSIS:Properties>
+      <SSIS:Property SSIS:Name="ID">{c32faae6-b4ed-482f-bae7-030435665847}</SSIS:Property>
+      <SSIS:Property SSIS:Name="CreationName" />
+      <SSIS:Property SSIS:Name="Description" />
+      <SSIS:Property SSIS:Name="IncludeInDebugDump">0</SSIS:Property>
+      <SSIS:Property SSIS:Name="Required">1</SSIS:Property>
+      <SSIS:Property SSIS:Name="Sensitive">1</SSIS:Property>
+      <SSIS:Property SSIS:Name="DataType">18</SSIS:Property>
+    </SSIS:Properties>
+  </SSIS:Parameter>
+  <SSIS:Parameter SSIS:Name="ambiente">
+    <SSIS:Properties>
+      <SSIS:Property SSIS:Name="ID">{0c3d7d44-b179-4138-b12b-3af5b3d776ab}</SSIS:Property>
+      <SSIS:Property SSIS:Name="CreationName" />
+      <SSIS:Property SSIS:Name="Description" />
+      <SSIS:Property SSIS:Name="IncludeInDebugDump">0</SSIS:Property>
+      <SSIS:Property SSIS:Name="Required">1</SSIS:Property>
+      <SSIS:Property SSIS:Name="Sensitive">0</SSIS:Property>
+      <SSIS:Property SSIS:Name="Value">QA</SSIS:Property>
+      <SSIS:Property SSIS:Name="DataType">18</SSIS:Property>
+    </SSIS:Properties>
+  </SSIS:Parameter>
+</SSIS:Parameters>

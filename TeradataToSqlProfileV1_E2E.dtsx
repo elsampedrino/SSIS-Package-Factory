@@ -1,0 +1,156 @@
+<?xml version='1.0' encoding='utf-8'?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts" DTS:refId="Package" DTS:CreationDate="8/12/2026 3:33:10 PM" DTS:CreationName="Microsoft.Package" DTS:CreatorComputerName="1187PC266" DTS:CreatorName="CCBA\P075986" DTS:DTSID="{B228A70A-11C5-408F-BD42-18F1A049341A}" DTS:ExecutableType="Microsoft.Package" DTS:LastModifiedProductVersion="17.0.1010.2" DTS:LocaleID="11274" DTS:ObjectName="TeradataToSqlProfileV1_E2E" DTS:PackageType="5" DTS:ProtectionLevel="2" DTS:VersionBuild="16" DTS:VersionGUID="{BFF0B795-F9F8-4E6E-862A-BEEC69C0B407}">
+  <DTS:Property DTS:Name="PackageFormatVersion">8</DTS:Property>
+  <DTS:Variables />
+  <DTS:Executables>
+    <DTS:Executable DTS:refId="Package\Flujo E2E Profile" DTS:CreationName="Microsoft.Pipeline" DTS:Description="Flujo E2E Profile" DTS:DTSID="{E08694EC-4D2B-4E97-8237-531C52FB3829}" DTS:ExecutableType="Microsoft.Pipeline" DTS:LocaleID="-1" DTS:ObjectName="Flujo E2E Profile" DTS:TaskContact="Performs high-performance data extraction, transformation and loading;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <pipeline version="1">
+          <components>
+            <component refId="Package\Flujo E2E Profile\Destino SQL" componentClassID="Microsoft.OLEDBDestination" contactInfo="Destino de OLE DB;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; Todos los derechos reservados; http://www.microsoft.com/sql/support;4" description="Destino SQL" name="Destino SQL" usesDispositions="true" version="4">
+              <properties>
+                <property dataType="System.Int32" description="Número de segundos antes de que se agote el tiempo de espera de un comando. Un valor de 0 indica un tiempo de espera infinito." name="CommandTimeout">0</property>
+                <property dataType="System.String" description="Especifica el nombre del objeto de base de datos usado para abrir un conjunto de filas." name="OpenRowset">[staging].[Factory_Test]</property>
+                <property dataType="System.String" description="Especifica la variable que contiene el nombre del objeto de base de datos usado para abrir un conjunto de filas." name="OpenRowsetVariable" />
+                <property dataType="System.String" description="Comando SQL para ejecutar." name="SqlCommand" UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor" />
+                <property dataType="System.Int32" description="Especifica la página de códigos de columna para utilizar cuando la información de página de códigos no está disponible en el origen de datos." name="DefaultCodePage">1252</property>
+                <property dataType="System.Boolean" description="Fuerza el uso del valor de la propiedad DefaultCodePage al describir datos de caracteres." name="AlwaysUseDefaultCodePage">false</property>
+                <property dataType="System.Int32" description="Especifica el modo utilizado para obtener acceso a la base de datos." name="AccessMode" typeConverter="AccessMode">0</property>
+                <property dataType="System.Boolean" description="Indica si los valores proporcionados para columnas de identidad se van a copiar al destino. Si es False, los valores de las columnas de identidad se generan automáticamente en el destino. Solo se aplica si está activada la carga rápida." name="FastLoadKeepIdentity">false</property>
+                <property dataType="System.Boolean" description="Indica si las columnas que contienen NULL tendrán NULL insertado en el destino. Si es False, las columnas que contienen NULL tendrán sus valores predeterminados insertados en el destino. Solo se aplica si está activada la carga rápida." name="FastLoadKeepNulls">false</property>
+                <property dataType="System.String" description="Especifica opciones para usar con la carga rápida. Solo se aplica si está activada la carga rápida." name="FastLoadOptions">TABLOCK,CHECK_CONSTRAINTS</property>
+                <property dataType="System.Int32" description="Especifica cuándo se emiten confirmaciones durante la inserción de datos. El valor 0 especifica que se emitirá una confirmación al final de la inserción de datos. Solo se aplica si está activada la carga rápida." name="FastLoadMaxInsertCommitSize">2147483647</property>
+              </properties>
+              <connections>
+                <connection refId="Package\Flujo E2E Profile\Destino SQL.Connections[OleDbConnection]" connectionManagerID="{22E76641-0FFD-415D-82E1-76D4D55AB1C3}:external" connectionManagerRefId="Project.ConnectionManagers[cnxSql]" description="La conexión de tiempo de ejecución OLE DB usada para obtener acceso a la base de datos." name="OleDbConnection" />
+              </connections>
+              <inputs>
+                <input refId="Package\Flujo E2E Profile\Destino SQL.Inputs[Entrada de destino de OLE DB]" errorOrTruncationOperation="Insertar" errorRowDisposition="FailComponent" hasSideEffects="true" name="Entrada de destino de OLE DB">
+                  <inputColumns>
+                    <inputColumn refId="Package\Flujo E2E Profile\Destino SQL.Inputs[Entrada de destino de OLE DB].Columns[Id_Test]" cachedDataType="i4" cachedName="Id_Test" externalMetadataColumnId="Package\Flujo E2E Profile\Destino SQL.Inputs[Entrada de destino de OLE DB].ExternalColumns[Id_Test]" lineageId="Package\Flujo E2E Profile\Origen Teradata.Outputs[Teradata Source Output].Columns[Id_Test]" />
+                    <inputColumn refId="Package\Flujo E2E Profile\Destino SQL.Inputs[Entrada de destino de OLE DB].Columns[Desc_Test]" cachedDataType="wstr" cachedLength="100" cachedName="Desc_Test" externalMetadataColumnId="Package\Flujo E2E Profile\Destino SQL.Inputs[Entrada de destino de OLE DB].ExternalColumns[Desc_Test]" lineageId="Package\Flujo E2E Profile\Origen Teradata.Outputs[Teradata Source Output].Columns[Desc_Test]" />
+                  </inputColumns>
+                  <externalMetadataColumns isUsed="True">
+                    <externalMetadataColumn refId="Package\Flujo E2E Profile\Destino SQL.Inputs[Entrada de destino de OLE DB].ExternalColumns[Id_Test]" dataType="i4" name="Id_Test" />
+                    <externalMetadataColumn refId="Package\Flujo E2E Profile\Destino SQL.Inputs[Entrada de destino de OLE DB].ExternalColumns[Desc_Test]" dataType="wstr" length="100" name="Desc_Test" />
+                  </externalMetadataColumns>
+                </input>
+              </inputs>
+              <outputs>
+                <output refId="Package\Flujo E2E Profile\Destino SQL.Outputs[Salida de error de destino de OLE DB]" exclusionGroup="1" isErrorOut="true" name="Salida de error de destino de OLE DB" synchronousInputId="Package\Flujo E2E Profile\Destino SQL.Inputs[Entrada de destino de OLE DB]">
+                  <outputColumns>
+                    <outputColumn refId="Package\Flujo E2E Profile\Destino SQL.Outputs[Salida de error de destino de OLE DB].Columns[ErrorCode]" dataType="i4" lineageId="Package\Flujo E2E Profile\Destino SQL.Outputs[Salida de error de destino de OLE DB].Columns[ErrorCode]" name="ErrorCode" specialFlags="1" />
+                    <outputColumn refId="Package\Flujo E2E Profile\Destino SQL.Outputs[Salida de error de destino de OLE DB].Columns[ErrorColumn]" dataType="i4" lineageId="Package\Flujo E2E Profile\Destino SQL.Outputs[Salida de error de destino de OLE DB].Columns[ErrorColumn]" name="ErrorColumn" specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component refId="Package\Flujo E2E Profile\Origen Teradata" componentClassID="Microsoft.SSISTeradataSrc" contactInfo="Teradata Source;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; Todos los derechos reservados; http://www.microsoft.com/sql/support;1" description="Origen Teradata" name="Origen Teradata" usesDispositions="true" version="1">
+              <properties>
+                <property dataType="System.String" description="The name of the table to be fetched." expressionType="Notify" name="TableName" />
+                <property dataType="System.String" description="The SQL command to be executed." expressionType="Notify" name="SqlCommand" UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor, Microsoft.DataTransformationServices.Controls, Version=17.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91">SELECT Id_Test, Desc_Test FROM D_TEST.Factory_Test</property>
+                <property dataType="System.Int32" description="Data transfer block size." expressionType="Notify" name="BlockSize">1048576</property>
+                <property dataType="System.Int32" description="Maximum size of a data buffer when 'Buffer mode' is applied. Value must be large enough to hold at least one data row (including 8 overhead bytes per row at most)." expressionType="Notify" name="BufferMaxSize">16775552</property>
+                <property dataType="System.Boolean" description="Indicates which type of Load method is used. True stands for 'Progress Buffered Rows'. False indicates 'Progress Row By Row'." expressionType="Notify" name="BufferMode">true</property>
+                <property dataType="System.Boolean" description="SQL requests and responses data encryption." expressionType="Notify" name="DataEncryption">false</property>
+                <property dataType="System.Int32" description="The code page to use when code page information is unavailable from the data source." expressionType="Notify" name="DefaultCodePage">1252</property>
+                <property dataType="System.String" description="A trace file name. Setting a value for this property enables TPT detailed tracing." expressionType="Notify" name="DetailedTracingFile" />
+                <property dataType="System.Int32" description="Specifies the types of diagnostic messages written by each instance of the dirver to an external log file. The diagnostic trace function provides more detailed information (including the version number) in the log file to aid in problem tracking and diagnosis." name="DetailedTracingLevel" typeConverter="DetailedTracingLevel">1</property>
+                <property dataType="System.Boolean" description="Whether or not to discard large rows." expressionType="Notify" name="DiscardLargeRow">false</property>
+                <property dataType="System.Boolean" description="Use maximal character buffers allocation factor. Used when 'Export Width Table ID' = 'Maximum Defaults'." expressionType="Notify" name="ExtendedStringColumnsAllocation">false</property>
+                <property dataType="System.Int32" description="Maximum row size (kb) it can support in export. Valid values are: 64, 1024." name="JobMaxRowSize" typeConverter="JobMaxRowSize">64</property>
+                <property dataType="System.Int32" description="Maximum number of sessions to log on." expressionType="Notify" name="MaxSessions">8</property>
+                <property dataType="System.Int32" description="Minimum number of sessions required." expressionType="Notify" name="MinSessions">4</property>
+                <property dataType="System.String" description="A user-defined query band expression." expressionType="Notify" name="QueryBandSessionInfo" />
+                <property dataType="System.Int32" description="Specifies whether to use spool or not while running the current Export job." name="SpoolMode" typeConverter="SpoolMode">0</property>
+                <property dataType="System.Int32" description="The number of hours to continue trying to log on when the maximum number of load jobs is already running on the Teradata Database." expressionType="Notify" name="TenacityHours">4</property>
+                <property dataType="System.Int32" description="The number of minutes to pause before retrying to log on when the maximum number of load jobs is already running on the Teradata Database." expressionType="Notify" name="TenacitySleep">6</property>
+                <property dataType="System.Boolean" description="Whether to allow Pass Through Characters (PTCs) to be exported from Teradata." expressionType="Notify" name="UnicodePassThrough">false</property>
+                <property dataType="System.Int32" description="The mode used to access the database." name="AccessMode" typeConverter="AccessMode">1</property>
+              </properties>
+              <connections>
+                <connection refId="Package\Flujo E2E Profile\Origen Teradata.Connections[TeradataConnection]" connectionManagerID="{318DC12B-F049-49C6-AAFD-292F97136627}:external" connectionManagerRefId="Project.ConnectionManagers[cnxTeradata]" description="The Teradata runtime connection used to access the database." name="TeradataConnection" />
+              </connections>
+              <outputs>
+                <output refId="Package\Flujo E2E Profile\Origen Teradata.Outputs[Teradata Source Output]" errorRowDisposition="FailComponent" name="Teradata Source Output" truncationRowDisposition="FailComponent">
+                  <outputColumns>
+                    <outputColumn refId="Package\Flujo E2E Profile\Origen Teradata.Outputs[Teradata Source Output].Columns[Id_Test]" dataType="i4" externalMetadataColumnId="Package\Flujo E2E Profile\Origen Teradata.Outputs[Teradata Source Output].ExternalColumns[Id_Test]" lineageId="Package\Flujo E2E Profile\Origen Teradata.Outputs[Teradata Source Output].Columns[Id_Test]" name="Id_Test" />
+                    <outputColumn refId="Package\Flujo E2E Profile\Origen Teradata.Outputs[Teradata Source Output].Columns[Desc_Test]" dataType="wstr" externalMetadataColumnId="Package\Flujo E2E Profile\Origen Teradata.Outputs[Teradata Source Output].ExternalColumns[Desc_Test]" length="100" lineageId="Package\Flujo E2E Profile\Origen Teradata.Outputs[Teradata Source Output].Columns[Desc_Test]" name="Desc_Test" />
+                  </outputColumns>
+                  <externalMetadataColumns isUsed="True">
+                    <externalMetadataColumn refId="Package\Flujo E2E Profile\Origen Teradata.Outputs[Teradata Source Output].ExternalColumns[Id_Test]" dataType="i4" name="Id_Test" />
+                    <externalMetadataColumn refId="Package\Flujo E2E Profile\Origen Teradata.Outputs[Teradata Source Output].ExternalColumns[Desc_Test]" dataType="wstr" length="100" name="Desc_Test" />
+                  </externalMetadataColumns>
+                </output>
+                <output refId="Package\Flujo E2E Profile\Origen Teradata.Outputs[Teradata Source Error Output]" isErrorOut="true" name="Teradata Source Error Output">
+                  <outputColumns>
+                    <outputColumn refId="Package\Flujo E2E Profile\Origen Teradata.Outputs[Teradata Source Error Output].Columns[Id_Test]" dataType="i4" lineageId="Package\Flujo E2E Profile\Origen Teradata.Outputs[Teradata Source Error Output].Columns[Id_Test]" name="Id_Test" />
+                    <outputColumn refId="Package\Flujo E2E Profile\Origen Teradata.Outputs[Teradata Source Error Output].Columns[Desc_Test]" dataType="wstr" length="100" lineageId="Package\Flujo E2E Profile\Origen Teradata.Outputs[Teradata Source Error Output].Columns[Desc_Test]" name="Desc_Test" />
+                    <outputColumn refId="Package\Flujo E2E Profile\Origen Teradata.Outputs[Teradata Source Error Output].Columns[ErrorCode]" dataType="i4" lineageId="Package\Flujo E2E Profile\Origen Teradata.Outputs[Teradata Source Error Output].Columns[ErrorCode]" name="ErrorCode" specialFlags="1" />
+                    <outputColumn refId="Package\Flujo E2E Profile\Origen Teradata.Outputs[Teradata Source Error Output].Columns[ErrorColumn]" dataType="i4" lineageId="Package\Flujo E2E Profile\Origen Teradata.Outputs[Teradata Source Error Output].Columns[ErrorColumn]" name="ErrorColumn" specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+          </components>
+          <paths>
+            <path refId="Package\Flujo E2E Profile.Paths[Teradata Source Output]" endId="Package\Flujo E2E Profile\Destino SQL.Inputs[Entrada de destino de OLE DB]" name="Teradata Source Output" startId="Package\Flujo E2E Profile\Origen Teradata.Outputs[Teradata Source Output]" />
+          </paths>
+        </pipeline>
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:DesignTimeProperties>&lt;Objects xmlns:gx="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" Version="8"&gt;
+  
+  &lt;Package design-time-name="Package"&gt;
+    &lt;LayoutInfo&gt;
+      &lt;gx:GraphLayout Capacity="4"&gt;
+        &lt;gx:NodeLayout Size="180,42" Id="Package\Flujo E2E Profile" TopLeft="163,73" /&gt;
+      &lt;/gx:GraphLayout&gt;
+    &lt;/LayoutInfo&gt;
+  &lt;/Package&gt;
+  &lt;TaskHost design-time-name="Package\Flujo E2E Profile"&gt;
+    &lt;LayoutInfo&gt;
+      &lt;gx:GraphLayout Capacity="8"&gt;
+        &lt;gx:NodeLayout Size="161,42" Id="Package\Flujo E2E Profile\Origen Teradata" TopLeft="239,74" /&gt;
+        &lt;gx:NodeLayout Size="175,42" Id="Package\Flujo E2E Profile\Destino SQL" TopLeft="228,244" /&gt;
+        &lt;gx:EdgeLayout Id="Package\Flujo E2E Profile.Paths[Teradata Source Output]" TopLeft="320.25,116"&gt;
+          &lt;gx:EdgeLayout.Curve&gt;
+            &lt;mssgle:Curve StartConnector="{assembly:Null}" EndConnector="0,46" Start="0,0" End="0,38.5"&gt;
+              &lt;mssgle:Curve.Segments&gt;
+                &lt;mssgle:SegmentCollection Capacity="5"&gt;
+                  &lt;mssgle:LineSegment End="0,38.5" /&gt;
+                &lt;/mssgle:SegmentCollection&gt;
+              &lt;/mssgle:Curve.Segments&gt;
+            &lt;/mssgle:Curve&gt;
+          &lt;/gx:EdgeLayout.Curve&gt;
+          &lt;gx:EdgeLayout.Labels&gt;
+            &lt;gx:EdgeLabelCollection /&gt;
+          &lt;/gx:EdgeLayout.Labels&gt;
+        &lt;/gx:EdgeLayout&gt;
+        &lt;/gx:GraphLayout&gt;
+    &lt;/LayoutInfo&gt;
+  &lt;/TaskHost&gt;
+  &lt;PipelineComponentMetadata design-time-name="Package\Flujo E2E Profile\Origen Teradata"&gt;
+    &lt;Properties&gt;
+      &lt;Property&gt;
+        &lt;Name&gt;DataSourceViewID&lt;/Name&gt;
+      &lt;/Property&gt;
+    &lt;/Properties&gt;
+  &lt;/PipelineComponentMetadata&gt;
+  &lt;PipelineComponentMetadata design-time-name="Package\Flujo E2E Profile\Destino SQL"&gt;
+    &lt;Properties&gt;
+      &lt;Property&gt;
+        &lt;Name&gt;DataSourceViewID&lt;/Name&gt;
+      &lt;/Property&gt;
+      &lt;Property&gt;
+        &lt;Name&gt;TableInfoObjectType&lt;/Name&gt;
+        &lt;Value type="q2:string"&gt;Table&lt;/Value&gt;
+      &lt;/Property&gt;
+    &lt;/Properties&gt;
+  &lt;/PipelineComponentMetadata&gt;
+&lt;/Objects&gt;</DTS:DesignTimeProperties>
+</DTS:Executable>

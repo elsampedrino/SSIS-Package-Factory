@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<DTS:ConnectionManager xmlns:DTS="www.microsoft.com/SqlServer/Dts" DTS:ObjectName="cnxSql" DTS:DTSID="{22E76641-0FFD-415D-82E1-76D4D55AB1C3}" DTS:CreationName="OLEDB">
+  <DTS:PropertyExpression DTS:Name="ServerName">@[$Project::srvSRVTESTDB]</DTS:PropertyExpression>
+  <DTS:PropertyExpression DTS:Name="Password">@[$Project::pwSRVTESTDB]</DTS:PropertyExpression>
+  <DTS:ObjectData>
+    <DTS:ConnectionManager DTS:ConnectRetryCount="1" DTS:ConnectRetryInterval="5" DTS:ConnectionString="Data Source=SRVTESTDB;User ID=usSxSSIS;Initial Catalog=TestCatalog;Provider=SQLOLEDB.1;Auto Translate=False;Application Name=SSIS-Factory-{22E76641-0FFD-415D-82E1-76D4D55AB1C3}cnxSql;" />
+  </DTS:ObjectData>
+</DTS:ConnectionManager>

@@ -1,0 +1,31 @@
+{
+  "_note": "MinimalSpec de GATE MANUAL para teradata-to-sql-profile-v1 -- NO productivo. Valores de Teradata/SQL deliberadamente ficticios (demuestra el mecanismo de override de los defaults corporativos TERADATA, y la derivacion automatica 'srv<Servidor>'/'pw<Servidor>' de los parametros SQL a partir de sql.server). Sin credenciales reales.",
+  "profile": "teradata_to_sql",
+  "environment": "QA",
+  "teradata": {
+    "charset": "ASCII",
+    "server": "tdtest.example.local",
+    "database": "D_DW_TEST",
+    "user": "usTestTeradata"
+  },
+  "sql": {
+    "server": "SRVTESTDB",
+    "catalog": "TestCatalog"
+  },
+  "process": {
+    "package_name": "TeradataToSqlProfileV1_E2E",
+    "data_flow_name": "Flujo E2E Profile",
+    "source_name": "Origen Teradata",
+    "sql": "SELECT Id_Test, Desc_Test FROM D_TEST.Factory_Test",
+    "columns": [
+      {"name": "Id_Test", "data_type": "i4"},
+      {"name": "Desc_Test", "data_type": "wstr", "length": 100}
+    ],
+    "destination_name": "Destino SQL",
+    "table": "[staging].[Factory_Test]",
+    "mappings": [
+      {"source": "Id_Test", "target": "Id_Test", "target_data_type": "i4"},
+      {"source": "Desc_Test", "target": "Desc_Test", "target_data_type": "wstr", "target_length": 100}
+    ]
+  }
+}

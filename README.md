@@ -28,6 +28,7 @@ producción — la ejecución confirmada fue en QA.
 | `template-teradata-to-sql-v1.1` | ✅ **STABLE / SSDT VALIDATED** — última capacidad estable de package generation | `docs/template_teradata_to_sql_v1.1_closure.md` |
 | `project-generation-v1` | ✅ **STABLE / SSDT VALIDATED** — genera `Project.params`+`.conmgr` (MODE B), consumidos por `TERADATA_TO_SQL v1.1`; Gate A y Gate B confirmados manualmente en SSDT | `docs/project_generation_v1.md` |
 | `control-flow-v1` | 🚫 **BLOCKED / EXPERIMENTAL** — SSDT `LoadFromXML` incompatibility not diagnosed | `docs/control_flow_v1.md` |
+| `teradata-to-sql-profile-v1` | ✅ **STABLE / SSDT VALIDATED** — capa opcional de defaults corporativos (`profiles/`) sobre `project-generation-v1`/`TERADATA_TO_SQL v1.1`, Gate SSDT confirmado manualmente | `docs/teradata_to_sql_profile_v1.md` |
 | `mapping-planner-v1` | ⚪ **NOT STARTED** — candidato futuro de roadmap | — |
 
 `template-teradata-to-sql-v1.1` sigue siendo la última familia de generación
@@ -51,8 +52,17 @@ Constraints a nivel Package) fue implementado y pasa toda la suite
 automática, pero **no superó el gate manual de SSDT** y por eso no forma
 parte de las capacidades estables — permanece `BLOCKED / EXPERIMENTAL`, ver
 `docs/control_flow_v1.md` para el detalle completo (scope, implementación
-alcanzada, las 4 rondas de diagnóstico, y cómo retomarlo). `mapping-planner-v1`
-sigue como idea de roadmap, **sin iniciar**.
+alcanzada, las 4 rondas de diagnóstico, y cómo retomarlo).
+`teradata-to-sql-profile-v1` agrega una capa **opcional** (`profiles/`) que
+resuelve un `MinimalSpec` a `ProjectSpec`/`ProcessSpec` completos con
+defaults corporativos (servidor/base/usuario Teradata, usuario SQL
+`usSxSSIS`, nombres de parámetro SQL derivados `srv<Servidor>`/`pw<Servidor>`,
+parámetro `ambiente`, `ProtectionLevel=EncryptSensitiveWithPassword`,
+`MinSessions=4`/`MaxSessions=8`), consumidos sin cambios por
+`project_generator`/`TERADATA_TO_SQL v1.1` — Gate SSDT confirmado
+manualmente y 324/324 tests en verde — ver
+`docs/teradata_to_sql_profile_v1.md`. `mapping-planner-v1` sigue como idea
+de roadmap, **sin iniciar**.
 
 ### Regla metodológica (agregada tras `control-flow-v1`)
 

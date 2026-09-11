@@ -58,6 +58,17 @@ TERADATA_SOURCE_CLASS_ID = "Microsoft.SSISTeradataSrc"
 DATA_CONVERSION_CLASS_ID = "Microsoft.DataConvert"
 OLE_DB_DESTINATION_CLASS_ID = "Microsoft.OLEDBDestination"
 
+# teradata-to-sql-profile-v1: mapeo evidence-based DTS:ProtectionLevel (atributo
+# numerico del <DTS:Executable> raiz) -- SOLO los 2 codigos confirmados contra
+# el corpus real (ver generator/spec_validator.py::SUPPORTED_PACKAGE_PROTECTION_LEVELS
+# y docs/teradata_to_sql_profile_v1.md). 'package.protection_level' es OPCIONAL
+# en el process_spec: ausente => build_package_tree() no toca el atributo, que
+# queda con el valor heredado del template (comportamiento actual, sin cambios).
+PROTECTION_LEVEL_CODES = {
+    "EncryptSensitiveWithUserKey": "1",
+    "EncryptSensitiveWithPassword": "2",
+}
+
 # Nombres estructurales FIJOS del template (sub-etiquetas de input/output que
 # el process_spec no expone — ver docs/generator_mvp.md, "Estructura de
 # process_spec propuesta"). Solo package.name/data_flow.name y el 'name' de
@@ -368,6 +379,14 @@ def build_package_tree(
     root.set(dts("DTSID"), new_guid())
     root.set(dts("VersionGUID"), new_guid())
 
+    # teradata-to-sql-profile-v1: 'protection_level' OPCIONAL -- ausente
+    # preserva el DTS:ProtectionLevel heredado del template (comportamiento
+    # actual, sin cambios); presente lo sobrescribe explicitamente. Ya
+    # validado contra SUPPORTED_PACKAGE_PROTECTION_LEVELS por spec_validator.
+    protection_level = spec["package"].get("protection_level")
+    if protection_level is not None:
+        root.set(dts("ProtectionLevel"), PROTECTION_LEVEL_CODES[protection_level])
+
     # --- Data Flow Task Executable ---
     dataflow_exe = _find_dataflow_executable(root)
     dataflow_exe.set(dts("refId"), dataflow_executable_ref(data_flow_name))
@@ -449,6 +468,18 @@ def _build_teradata_source(
 
     properties_el = component_el.find("properties")
     _set_property_text(properties_el, "SqlCommand", spec["sql"])
+
+    # teradata-to-sql-profile-v1: 'min_sessions'/'max_sessions' OPCIONALES --
+    # ausentes preservan los valores heredados del template (comportamiento
+    # actual, sin cambios: hoy son 4/8 porque asi esta campanias_base.dtsx,
+    # pero ese heredo era implicito/accidental -- ver docs/teradata_to_sql_profile_v1.md).
+    # Presentes, sobrescriben explicitamente las properties ya existentes del
+    # template (MinSessions/MaxSessions siempre estan presentes en un Teradata
+    # Source real, ver _set_property_text).
+    if "min_sessions" in spec:
+        _set_property_text(properties_el, "MinSessions", str(spec["min_sessions"]))
+    if "max_sessions" in spec:
+        _set_property_text(properties_el, "MaxSessions", str(spec["max_sessions"]))
 
     connection_el = component_el.find("connections/connection")
     connection_el.set("refId", connection_ref(data_flow, name, SOURCE_CONNECTION_LOCAL_NAME))

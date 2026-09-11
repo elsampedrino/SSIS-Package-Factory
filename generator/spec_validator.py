@@ -37,6 +37,20 @@ STRING_DATA_TYPES = {"str", "wstr"}
 NON_UNICODE_STRING_TYPE = "str"
 NUMERIC_DATA_TYPE = "numeric"
 
+# teradata-to-sql-profile-v1: unicos dos valores de DTSProtectionLevel con
+# evidencia real en el corpus -- "EncryptSensitiveWithPassword" en los 2
+# proyectos productivos reales (BipSuc, PagosYRecaudaciones; DTS:ProtectionLevel="2"
+# a nivel package), "EncryptSensitiveWithUserKey" en el unico proyecto SSDT
+# recien creado sin customizar (SSDT_Golden; DTS:ProtectionLevel="1") -- ver
+# docs/teradata_to_sql_profile_v1.md. Campo OPCIONAL en 'package': ausente
+# preserva el comportamiento actual (ProtectionLevel heredado del template
+# sin tocar); presente debe ser uno de estos dos valores evidenciados, nunca
+# un codigo numerico crudo ni un valor inventado del enum DTSProtectionLevel.
+SUPPORTED_PACKAGE_PROTECTION_LEVELS = {
+    "EncryptSensitiveWithPassword",
+    "EncryptSensitiveWithUserKey",
+}
+
 # Provider esperado para cada rol, segun el unico tipo de source/destination
 # que este MVP sabe escribir (Microsoft.SSISTeradataSrc / Microsoft.OLEDBDestination).
 # No es una propiedad del ProjectContext -- es una regla de ESTE generador.
@@ -99,6 +113,27 @@ def _validate_connection_reference(
     return []
 
 
+def _validate_optional_teradata_source_sessions(
+    source: Dict[str, Any], label: str
+) -> List[str]:
+    """
+    teradata-to-sql-profile-v1: 'min_sessions'/'max_sessions' son OPCIONALES
+    en 'data_flow.source' -- ausentes preservan el comportamiento actual
+    (valores heredados del template sin tocar, ver
+    generator/campanias_generator.py::_build_teradata_source). Si estan
+    presentes, deben ser enteros positivos -- no se valida aca ningun rango
+    "razonable" especifico (ej. min<=max): no hay evidencia de que SSIS lo
+    exija, y esta funcion solo valida el TIPO, igual criterio que el resto
+    de los campos numericos opcionales de este modulo (ej. 'access_mode').
+    """
+    errors: List[str] = []
+    if "min_sessions" in source and not _positive_int(source.get("min_sessions")):
+        errors.append(f"'{label}.min_sessions', si esta presente, debe ser entero positivo.")
+    if "max_sessions" in source and not _positive_int(source.get("max_sessions")):
+        errors.append(f"'{label}.max_sessions', si esta presente, debe ser entero positivo.")
+    return errors
+
+
 def validate_spec(spec: Dict[str, Any], project_context: Dict[str, Any]) -> List[str]:
     """
     Devuelve la lista de errores encontrados (vacia si el spec es valido).
@@ -130,6 +165,19 @@ def validate_spec(spec: Dict[str, Any], project_context: Dict[str, Any]) -> List
     else:
         if not _non_empty_str(package.get("name")):
             errors.append("'package.name' es obligatorio y no puede estar vacio.")
+        # teradata-to-sql-profile-v1: 'protection_level' es OPCIONAL -- ausente
+        # preserva el comportamiento actual (ver PROTECTION_LEVEL_CODES en
+        # campanias_generator.py); presente debe ser uno de los 2 valores
+        # evidenciados en SUPPORTED_PACKAGE_PROTECTION_LEVELS.
+        if (
+            "protection_level" in package
+            and package.get("protection_level") not in SUPPORTED_PACKAGE_PROTECTION_LEVELS
+        ):
+            errors.append(
+                "'package.protection_level', si esta presente, debe ser uno de "
+                f"{sorted(SUPPORTED_PACKAGE_PROTECTION_LEVELS)}; "
+                f"vino: {package.get('protection_level')!r}."
+            )
 
     data_flow = spec.get("data_flow")
     if not isinstance(data_flow, dict):
@@ -435,6 +483,12 @@ def validate_spec(spec: Dict[str, Any], project_context: Dict[str, Any]) -> List
                     f"{label} (target_data_type='numeric') requiere "
                     "'target_scale' entero >= 0."
                 )
+
+    source = data_flow.get("source")
+    if isinstance(source, dict):
+        errors.extend(
+            _validate_optional_teradata_source_sessions(source, label="data_flow.source")
+        )
 
     return errors
 
