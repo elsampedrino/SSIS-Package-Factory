@@ -1,0 +1,13 @@
+{
+  "_note": "Logical Mapping de GATE MANUAL para mapping-planner-v1 -- NO productivo. Cubre 1 caso DIRECT numeric (Mto_Evento), 1 caso DIRECT entero (Cod_Campania) y 1 caso CONVERSION_REQUIRED str->wstr (Id_Evento) -- deliberadamente sin AMBIGUOUS/UNSAFE/UNSUPPORTED (ver docs/mapping_planner_v1.md, seccion E2E). Usa el ProjectContext real y ya estable de BipSuc_CampaniasVIgentes (cnxTeradata/cnxSrvBsLogSBD01) solo para poder generar un .dtsx valido para el gate -- la tabla/consulta son ficticias.",
+  "source_schema": [
+    {"name": "Id_Evento", "data_type": "str", "length": 20, "code_page": 1252},
+    {"name": "Mto_Evento", "data_type": "numeric", "precision": 15, "scale": 2},
+    {"name": "Cod_Campania", "data_type": "i4"}
+  ],
+  "mappings": [
+    {"source": "Id_Evento", "target": "Id_Evento", "target_data_type": "wstr", "target_length": 20},
+    {"source": "Mto_Evento", "target": "Mto_Evento", "target_data_type": "numeric", "target_precision": 15, "target_scale": 2},
+    {"source": "Cod_Campania", "target": "CodigoCampania", "target_data_type": "i4"}
+  ]
+}

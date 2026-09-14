@@ -29,7 +29,7 @@ producción — la ejecución confirmada fue en QA.
 | `project-generation-v1` | ✅ **STABLE / SSDT VALIDATED** — genera `Project.params`+`.conmgr` (MODE B), consumidos por `TERADATA_TO_SQL v1.1`; Gate A y Gate B confirmados manualmente en SSDT | `docs/project_generation_v1.md` |
 | `control-flow-v1` | 🚫 **BLOCKED / EXPERIMENTAL** — SSDT `LoadFromXML` incompatibility not diagnosed | `docs/control_flow_v1.md` |
 | `teradata-to-sql-profile-v1` | ✅ **STABLE / SSDT VALIDATED** — capa opcional de defaults corporativos (`profiles/`) sobre `project-generation-v1`/`TERADATA_TO_SQL v1.1`, Gate SSDT confirmado manualmente | `docs/teradata_to_sql_profile_v1.md` |
-| `mapping-planner-v1` | ⚪ **NOT STARTED** — candidato futuro de roadmap | — |
+| `mapping-planner-v1` | ✅ **STABLE / SSDT VALIDATED** — clasifica mappings (`DIRECT`/`CONVERSION_REQUIRED`/`AMBIGUOUS`/`UNSAFE`/`UNSUPPORTED`) y traduce a `ProcessSpec` sin tocar `TERADATA_TO_SQL v1.1`; Gate SSDT confirmado manualmente | `docs/mapping_planner_v1.md` |
 
 `template-teradata-to-sql-v1.1` sigue siendo la última familia de generación
 de *packages* completamente estable: Teradata Source, OLE DB/SQL Server
@@ -61,8 +61,15 @@ parámetro `ambiente`, `ProtectionLevel=EncryptSensitiveWithPassword`,
 `MinSessions=4`/`MaxSessions=8`), consumidos sin cambios por
 `project_generator`/`TERADATA_TO_SQL v1.1` — Gate SSDT confirmado
 manualmente y 324/324 tests en verde — ver
-`docs/teradata_to_sql_profile_v1.md`. `mapping-planner-v1` sigue como idea
-de roadmap, **sin iniciar**.
+`docs/teradata_to_sql_profile_v1.md`. `mapping-planner-v1` agrega una capa
+de **decisión** (`mapping_planner/`, Python puro, sin XML) que clasifica
+cada mapping origen→destino (`DIRECT`/`CONVERSION_REQUIRED`/`AMBIGUOUS`/
+`UNSAFE`/`UNSUPPORTED` — con `UNSAFE` siempre con prioridad sobre cualquier
+regla de conversión conocida) y traduce el resultado a un fragmento de
+`ProcessSpec` (Data Conversion + `destination.mappings[]`), consumido sin
+ningún cambio por `generator/campanias_generator.py`/`generator/spec_validator.py`
+— Gate SSDT confirmado manualmente y 371/371 tests en verde — ver
+`docs/mapping_planner_v1.md`.
 
 ### Regla metodológica (agregada tras `control-flow-v1`)
 
