@@ -37,6 +37,27 @@ STRING_DATA_TYPES = {"str", "wstr"}
 NON_UNICODE_STRING_TYPE = "str"
 NUMERIC_DATA_TYPE = "numeric"
 
+# derived-column-v1: segundo tipo de transformacion soportado, ademas de
+# 'data_conversion' -- ver docs/derived_column_v1.md. A lo sumo UN elemento
+# de CADA tipo por Data Flow (nunca 2 del mismo tipo); si ambos coexisten,
+# 'data_conversion' debe declararse ANTES que 'derived_column' en
+# 'transformations[]' -- unico orden evidenciado en el corpus real
+# (BipSuc_Turnero.dtsx, 3 instancias identicas: Source -> Data Conversion ->
+# Derived Column -> Destination). La lista codifica el orden real del
+# pipeline, nunca se reordena.
+DERIVED_COLUMN_TRANSFORMATION_TYPE = "derived_column"
+SUPPORTED_TRANSFORMATION_TYPES = {SUPPORTED_TRANSFORMATION_TYPE, DERIVED_COLUMN_TRANSFORMATION_TYPE}
+
+# Unica operacion estructurada soportada en derived-column-v1 (ver
+# docs/derived_column_v1.md) -- cualquier otra ('cast', 'constant',
+# 'arbitrary_expression', etc.) se rechaza explicitamente, nunca en silencio.
+NULL_PRESERVING_CAST_OPERATION = "null_preserving_cast"
+SUPPORTED_DERIVED_COLUMN_OPERATIONS = {NULL_PRESERVING_CAST_OPERATION}
+
+# Unico target_type soportado por una Derived Column en v1 -- sin evidencia
+# de ningun otro (ver auditoria de derived-column-v1).
+SUPPORTED_DERIVED_COLUMN_TARGET_TYPE = "wstr"
+
 # teradata-to-sql-profile-v1: unicos dos valores de DTSProtectionLevel con
 # evidencia real en el corpus -- "EncryptSensitiveWithPassword" en los 2
 # proyectos productivos reales (BipSuc, PagosYRecaudaciones; DTS:ProtectionLevel="2"
@@ -264,120 +285,224 @@ def validate_spec(spec: Dict[str, Any], project_context: Dict[str, Any]) -> List
                 )
 
     # -----------------------------------------------------------------
-    # transformations — Data Conversion es OPCIONAL desde
-    # template-teradata-to-sql-v1: 0 elementos (Source -> Destination
-    # directo) o 1 elemento (Source -> Data Conversion -> Destination).
-    # Mas de 1 sigue sin estar soportado (no se infiere ni se permite
-    # encadenar transformaciones todavia). La AUSENCIA de la clave
-    # 'transformations' se trata igual que una lista vacia (equivalente,
-    # segun lo pedido: ambas formas significan "sin Data Conversion").
+    # transformations — 0, 1 o 2 elementos: 'data_conversion' y
+    # 'derived_column' son OPCIONALES e INDEPENDIENTES (derived-column-v1
+    # agrega el segundo tipo, ver SUPPORTED_TRANSFORMATION_TYPES). A lo sumo
+    # UN elemento de CADA tipo (nunca 2 del mismo tipo). Si ambos coexisten,
+    # 'data_conversion' debe declararse ANTES que 'derived_column' -- unico
+    # orden evidenciado en el corpus real (ver
+    # docs/derived_column_v1.md). La AUSENCIA de la clave 'transformations'
+    # se trata igual que una lista vacia.
     # -----------------------------------------------------------------
     transformations = data_flow.get("transformations", [])
     if not isinstance(transformations, list):
         errors.append(
             "'data_flow.transformations' debe ser una lista (vacia si no hace "
-            "falta Data Conversion, o con 1 elemento si hace falta)."
+            "falta ninguna transformacion, o con hasta un elemento por tipo "
+            f"soportado: {sorted(SUPPORTED_TRANSFORMATION_TYPES)})."
         )
         transformations = []
-    elif len(transformations) > 1:
+    elif len(transformations) > len(SUPPORTED_TRANSFORMATION_TYPES):
         errors.append(
-            "'data_flow.transformations' admite como maximo 1 elemento en este "
-            f"MVP (Data Conversion es opcional, pero no hay soporte para "
-            f"encadenar mas de una). Elementos encontrados: {len(transformations)}."
+            "'data_flow.transformations' admite como maximo "
+            f"{len(SUPPORTED_TRANSFORMATION_TYPES)} elementos en este MVP "
+            f"(uno por tipo soportado: {sorted(SUPPORTED_TRANSFORMATION_TYPES)}). "
+            f"Elementos encontrados: {len(transformations)}."
         )
         transformations = []
 
     conversion_outputs = set()
+    derived_column_outputs = set()
+    seen_transformation_types: List[str] = []
+
     for idx, transform in enumerate(transformations):
         label = f"data_flow.transformations[{idx}]"
         if not isinstance(transform, dict):
             errors.append(f"{label} debe ser un objeto.")
             continue
-        if transform.get("type") != SUPPORTED_TRANSFORMATION_TYPE:
+
+        transform_type = transform.get("type")
+        if transform_type not in SUPPORTED_TRANSFORMATION_TYPES:
             errors.append(
-                f"{label}.type debe ser '{SUPPORTED_TRANSFORMATION_TYPE}' "
-                f"(unico tipo de transformacion soportado por este MVP); "
-                f"vino: {transform.get('type')!r}."
+                f"{label}.type debe ser uno de {sorted(SUPPORTED_TRANSFORMATION_TYPES)} "
+                f"(unicos tipos de transformacion soportados por este MVP); "
+                f"vino: {transform_type!r}."
             )
             continue
+
+        if transform_type in seen_transformation_types:
+            errors.append(
+                f"{label}.type = '{transform_type}' esta repetido -- a lo sumo "
+                "una transformacion de cada tipo por Data Flow en este MVP."
+            )
+            continue
+        seen_transformation_types.append(transform_type)
+
         if not _non_empty_str(transform.get("name")):
             errors.append(f"{label}.name es obligatorio y no puede estar vacio.")
 
-        conversions = transform.get("conversions")
-        if not isinstance(conversions, list) or len(conversions) == 0:
-            errors.append(f"{label}.conversions debe ser una lista no vacia.")
-            conversions = []
+        if transform_type == SUPPORTED_TRANSFORMATION_TYPE:
+            # --- data_conversion: sin cambios de comportamiento ---
+            conversions = transform.get("conversions")
+            if not isinstance(conversions, list) or len(conversions) == 0:
+                errors.append(f"{label}.conversions debe ser una lista no vacia.")
+                conversions = []
 
-        for c_idx, conv in enumerate(conversions):
-            c_label = f"{label}.conversions[{c_idx}]"
-            if not isinstance(conv, dict):
-                errors.append(f"{c_label} debe ser un objeto.")
-                continue
-            conv_input = conv.get("input")
-            conv_output = conv.get("output")
-            target_type = conv.get("target_type")
+            for c_idx, conv in enumerate(conversions):
+                c_label = f"{label}.conversions[{c_idx}]"
+                if not isinstance(conv, dict):
+                    errors.append(f"{c_label} debe ser un objeto.")
+                    continue
+                conv_input = conv.get("input")
+                conv_output = conv.get("output")
+                target_type = conv.get("target_type")
 
-            if not _non_empty_str(conv_input):
-                errors.append(f"{c_label}.input es obligatorio y no puede estar vacio.")
-            elif conv_input not in seen_column_names:
-                errors.append(
-                    f"{c_label}.input = '{conv_input}' no existe entre las columnas "
-                    "declaradas en data_flow.source.columns."
-                )
+                if not _non_empty_str(conv_input):
+                    errors.append(f"{c_label}.input es obligatorio y no puede estar vacio.")
+                elif conv_input not in seen_column_names:
+                    errors.append(
+                        f"{c_label}.input = '{conv_input}' no existe entre las columnas "
+                        "declaradas en data_flow.source.columns."
+                    )
 
-            if not _non_empty_str(conv_output):
-                errors.append(f"{c_label}.output es obligatorio y no puede estar vacio.")
-            else:
-                if conv_output in conversion_outputs:
-                    errors.append(
-                        f"{c_label}.output = '{conv_output}' colisiona con el output "
-                        "de otra conversion (nombres de output de Data Conversion "
-                        "deben ser unicos entre si)."
-                    )
-                if conv_output in seen_column_names:
-                    errors.append(
-                        f"{c_label}.output = '{conv_output}' colisiona con un nombre "
-                        "de columna de origen ya existente (generaria ambiguedad al "
-                        "resolver 'source' en un mapping)."
-                    )
-                conversion_outputs.add(conv_output)
-                pipeline_columns.add(conv_output)
-
-            if not _non_empty_str(target_type):
-                errors.append(f"{c_label}.target_type es obligatorio y no puede estar vacio.")
-            else:
-                # Mismo criterio que mappings[] (destino): el target_type de
-                # una conversion determina que metadata adicional hace falta
-                # para poder escribir un <outputColumn>/<externalMetadataColumn>
-                # valido (ver generator/campanias_generator.py::_build_data_conversion
-                # y docs/template_teradata_to_sql_v1_generalization_pagosyrecaudaciones.md,
-                # seccion 6 -- antes de esto, target_type='wstr'/'str' no
-                # exigia longitud y el generator la descartaba silenciosamente).
-                if target_type in STRING_DATA_TYPES and not _positive_int(
-                    conv.get("target_length")
-                ):
-                    errors.append(
-                        f"{c_label} (target_type={target_type!r}) requiere "
-                        "'target_length' entero positivo."
-                    )
-                if target_type == NON_UNICODE_STRING_TYPE and not _positive_int(
-                    conv.get("target_code_page")
-                ):
-                    errors.append(
-                        f"{c_label} (target_type='str') requiere 'target_code_page' "
-                        "entero positivo."
-                    )
-                if target_type == NUMERIC_DATA_TYPE:
-                    if not _positive_int(conv.get("target_precision")):
+                if not _non_empty_str(conv_output):
+                    errors.append(f"{c_label}.output es obligatorio y no puede estar vacio.")
+                else:
+                    if conv_output in conversion_outputs:
                         errors.append(
-                            f"{c_label} (target_type='numeric') requiere "
-                            "'target_precision' entero positivo."
+                            f"{c_label}.output = '{conv_output}' colisiona con el output "
+                            "de otra conversion (nombres de output de Data Conversion "
+                            "deben ser unicos entre si)."
                         )
-                    if not _non_negative_int(conv.get("target_scale")):
+                    if conv_output in seen_column_names:
                         errors.append(
-                            f"{c_label} (target_type='numeric') requiere "
-                            "'target_scale' entero >= 0."
+                            f"{c_label}.output = '{conv_output}' colisiona con un nombre "
+                            "de columna de origen ya existente (generaria ambiguedad al "
+                            "resolver 'source' en un mapping)."
                         )
+                    conversion_outputs.add(conv_output)
+                    pipeline_columns.add(conv_output)
+
+                if not _non_empty_str(target_type):
+                    errors.append(f"{c_label}.target_type es obligatorio y no puede estar vacio.")
+                else:
+                    # Mismo criterio que mappings[] (destino): el target_type de
+                    # una conversion determina que metadata adicional hace falta
+                    # para poder escribir un <outputColumn>/<externalMetadataColumn>
+                    # valido (ver generator/campanias_generator.py::_build_data_conversion
+                    # y docs/template_teradata_to_sql_v1_generalization_pagosyrecaudaciones.md,
+                    # seccion 6 -- antes de esto, target_type='wstr'/'str' no
+                    # exigia longitud y el generator la descartaba silenciosamente).
+                    if target_type in STRING_DATA_TYPES and not _positive_int(
+                        conv.get("target_length")
+                    ):
+                        errors.append(
+                            f"{c_label} (target_type={target_type!r}) requiere "
+                            "'target_length' entero positivo."
+                        )
+                    if target_type == NON_UNICODE_STRING_TYPE and not _positive_int(
+                        conv.get("target_code_page")
+                    ):
+                        errors.append(
+                            f"{c_label} (target_type='str') requiere 'target_code_page' "
+                            "entero positivo."
+                        )
+                    if target_type == NUMERIC_DATA_TYPE:
+                        if not _positive_int(conv.get("target_precision")):
+                            errors.append(
+                                f"{c_label} (target_type='numeric') requiere "
+                                "'target_precision' entero positivo."
+                            )
+                        if not _non_negative_int(conv.get("target_scale")):
+                            errors.append(
+                                f"{c_label} (target_type='numeric') requiere "
+                                "'target_scale' entero >= 0."
+                            )
+
+        elif transform_type == DERIVED_COLUMN_TRANSFORMATION_TYPE:
+            # --- derived_column (derived-column-v1): unica operacion
+            # soportada 'null_preserving_cast', unico target_type
+            # soportado 'wstr'. NO se valida aca si el 'input' es realmente
+            # i2/i4/i8, ni si 'target_length' alcanza la capacidad teorica
+            # del origen -- esa clasificacion de seguridad (UNSAFE/
+            # UNSUPPORTED) es responsabilidad de derived_planner, ANTES de
+            # construir este ProcessSpec (mismo criterio de no duplicar
+            # reglas entre capas ya aplicado en mapping_planner/). Este
+            # modulo solo valida estructura: referencias, tipos de Python,
+            # y el vocabulario cerrado de 'operation'/'target_type'.
+            columns = transform.get("columns")
+            if not isinstance(columns, list) or len(columns) == 0:
+                errors.append(f"{label}.columns debe ser una lista no vacia.")
+                columns = []
+
+            for c_idx, col in enumerate(columns):
+                c_label = f"{label}.columns[{c_idx}]"
+                if not isinstance(col, dict):
+                    errors.append(f"{c_label} debe ser un objeto.")
+                    continue
+
+                col_input = col.get("input")
+                col_output = col.get("output")
+                operation = col.get("operation")
+                target_type = col.get("target_type")
+
+                if not _non_empty_str(col_input):
+                    errors.append(f"{c_label}.input es obligatorio y no puede estar vacio.")
+                elif col_input not in pipeline_columns:
+                    errors.append(
+                        f"{c_label}.input = '{col_input}' no existe entre las columnas "
+                        "disponibles del pipeline en este punto (columnas de origen "
+                        "u outputs de una transformacion previa)."
+                    )
+
+                if not _non_empty_str(col_output):
+                    errors.append(f"{c_label}.output es obligatorio y no puede estar vacio.")
+                else:
+                    if col_output in derived_column_outputs:
+                        errors.append(
+                            f"{c_label}.output = '{col_output}' colisiona con el output "
+                            "de otra columna derivada (nombres de output de Derived "
+                            "Column deben ser unicos entre si)."
+                        )
+                    if col_output in pipeline_columns:
+                        errors.append(
+                            f"{c_label}.output = '{col_output}' colisiona con un nombre "
+                            "de columna ya existente en el pipeline (generaria ambiguedad "
+                            "al resolver 'source' en un mapping)."
+                        )
+                    derived_column_outputs.add(col_output)
+                    pipeline_columns.add(col_output)
+
+                if operation not in SUPPORTED_DERIVED_COLUMN_OPERATIONS:
+                    errors.append(
+                        f"{c_label}.operation debe ser uno de "
+                        f"{sorted(SUPPORTED_DERIVED_COLUMN_OPERATIONS)} (unica(s) operacion(es) "
+                        f"soportada(s) por derived-column-v1); vino: {operation!r}."
+                    )
+
+                if target_type != SUPPORTED_DERIVED_COLUMN_TARGET_TYPE:
+                    errors.append(
+                        f"{c_label}.target_type debe ser '{SUPPORTED_DERIVED_COLUMN_TARGET_TYPE}' "
+                        f"(unico target soportado por derived-column-v1); vino: {target_type!r}."
+                    )
+
+                if not _positive_int(col.get("target_length")):
+                    errors.append(
+                        f"{c_label}.target_length es obligatorio y debe ser entero positivo."
+                    )
+
+    if (
+        SUPPORTED_TRANSFORMATION_TYPE in seen_transformation_types
+        and DERIVED_COLUMN_TRANSFORMATION_TYPE in seen_transformation_types
+        and seen_transformation_types.index(SUPPORTED_TRANSFORMATION_TYPE)
+        > seen_transformation_types.index(DERIVED_COLUMN_TRANSFORMATION_TYPE)
+    ):
+        errors.append(
+            f"'data_flow.transformations': si coexisten '{SUPPORTED_TRANSFORMATION_TYPE}' y "
+            f"'{DERIVED_COLUMN_TRANSFORMATION_TYPE}', '{SUPPORTED_TRANSFORMATION_TYPE}' debe "
+            f"declararse ANTES que '{DERIVED_COLUMN_TRANSFORMATION_TYPE}' (unico orden "
+            "evidenciado en el corpus real, ver docs/derived_column_v1.md)."
+        )
 
     # -----------------------------------------------------------------
     # destination

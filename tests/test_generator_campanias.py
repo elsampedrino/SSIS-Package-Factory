@@ -218,14 +218,26 @@ class OptionalDataConversionTests(unittest.TestCase):
     def test_one_data_conversion_is_still_a_valid_spec(self):
         self.assertEqual(validate_spec(self.campanias_spec, PROJECT_CONTEXT), [])
 
-    def test_more_than_one_transformation_is_rejected(self):
+    def test_more_than_one_transformation_of_same_type_is_rejected(self):
         spec = copy.deepcopy(self.campanias_spec)
         spec["data_flow"]["transformations"].append(
             {"type": "data_conversion", "name": "Segunda conversion", "conversions": []}
         )
         errors = validate_spec(spec, PROJECT_CONTEXT)
         self.assertTrue(errors)
-        self.assertTrue(any("maximo 1 elemento" in e for e in errors))
+        self.assertTrue(any("esta repetido" in e for e in errors))
+
+    def test_more_transformations_than_supported_types_is_rejected(self):
+        spec = copy.deepcopy(self.campanias_spec)
+        spec["data_flow"]["transformations"].extend(
+            [
+                {"type": "derived_column", "name": "Columna derivada", "columns": []},
+                {"type": "data_conversion", "name": "Tercera conversion", "conversions": []},
+            ]
+        )
+        errors = validate_spec(spec, PROJECT_CONTEXT)
+        self.assertTrue(errors)
+        self.assertTrue(any("maximo" in e for e in errors))
 
     def test_missing_transformations_key_is_equivalent_to_empty_list(self):
         spec = copy.deepcopy(self.synthetic_spec)

@@ -14,14 +14,15 @@ propio, se editan sus refIds (renombrar o eliminar segun corresponda) y se
 vuelve a serializar — nunca se genera su forma final desde cero.
 
 Alcance (template-teradata-to-sql-v1): Teradata Source -> [Data Conversion
-OPCIONAL] -> OLE DB Destination. Si el spec no declara ninguna conversion,
-el componente Data Conversion se elimina del arbol (no queda presente pero
-desconectado) y el pipeline queda Source -> Destination directo. No soporta
-mas de 1 Data Conversion, ni Sequence Containers, Execute SQL Task,
-transacciones, staging, Merge Join, Conditional Split, Row Count ni OLE DB
-Source como origen. No hay inferencia automatica de que columnas necesitan
-conversion — es siempre una declaracion explicita del spec (ver
-docs/template_teradata_to_sql_v1_audit.md, §5).
+OPCIONAL] -> [Derived Column OPCIONAL] -> OLE DB Destination. Si el spec no
+declara ninguna conversion/derivacion, el componente correspondiente se
+elimina del arbol (no queda presente pero desconectado) y el pipeline se
+acorta. No soporta mas de 1 Data Conversion ni mas de 1 Derived Column, ni
+Sequence Containers, Execute SQL Task, transacciones, staging, Merge Join,
+Conditional Split, Row Count ni OLE DB Source como origen. No hay inferencia
+automatica de que columnas necesitan conversion/derivacion — es siempre una
+declaracion explicita del spec (ver docs/template_teradata_to_sql_v1_audit.md,
+§5, y docs/derived_column_v1.md).
 """
 
 from __future__ import annotations
@@ -56,6 +57,7 @@ from .xml_helpers import (
 # analizador (ver generator/__init__.py).
 TERADATA_SOURCE_CLASS_ID = "Microsoft.SSISTeradataSrc"
 DATA_CONVERSION_CLASS_ID = "Microsoft.DataConvert"
+DERIVED_COLUMN_CLASS_ID = "Microsoft.DerivedColumn"
 OLE_DB_DESTINATION_CLASS_ID = "Microsoft.OLEDBDestination"
 
 # teradata-to-sql-profile-v1: mapeo evidence-based DTS:ProtectionLevel (atributo
@@ -76,6 +78,10 @@ PROTECTION_LEVEL_CODES = {
 TEMPLATE_DATA_FLOW_NAME = "Tarea Flujo de datos"
 TEMPLATE_SOURCE_NAME = "Teradata Source"
 TEMPLATE_CONVERSION_NAME = "Conversión de datos"
+# derived-column-v1: nombre del componente evidenciado en las 3 instancias
+# identicas de BipSuc_Turnero.dtsx -- no varia entre proyectos (ver
+# docs/derived_column_v1.md).
+TEMPLATE_DERIVED_COLUMN_NAME = "Columna derivada"
 TEMPLATE_DESTINATION_NAME = "Destino de OLE DB"
 
 SOURCE_OUTPUT_NAME = "Teradata Source Output"
@@ -86,12 +92,22 @@ CONVERSION_INPUT_NAME = "Entrada de conversión de datos"
 CONVERSION_OUTPUT_NAME = "Salida de conversión de datos"
 CONVERSION_ERROR_OUTPUT_NAME = "Salida de error de conversión de datos"
 
+# derived-column-v1
+DERIVED_COLUMN_INPUT_NAME = "Entrada de columna derivada"
+DERIVED_COLUMN_OUTPUT_NAME = "Salida de columna derivada"
+DERIVED_COLUMN_ERROR_OUTPUT_NAME = "Salida de error de columna derivada"
+
 DESTINATION_INPUT_NAME = "Entrada de destino de OLE DB"
 DESTINATION_ERROR_OUTPUT_NAME = "Salida de error de destino de OLE DB"
 DESTINATION_CONNECTION_LOCAL_NAME = "OleDbConnection"
 
 PATH_1_NAME = SOURCE_OUTPUT_NAME
 PATH_2_NAME = CONVERSION_OUTPUT_NAME
+# derived-column-v1: tercer path posible, unico orden evidenciado (ver
+# docs/derived_column_v1.md) -- Source -> [Data Conversion] -> [Derived
+# Column] -> Destination. El nombre de cada path es siempre el del OUTPUT
+# que lo origina (convencion ya establecida), nunca el del destino.
+PATH_3_NAME = DERIVED_COLUMN_OUTPUT_NAME
 
 
 class GeneratorError(Exception):
@@ -358,17 +374,32 @@ def build_package_tree(
 ) -> ET.Element:
     """Construye el arbol XML completo del paquete generado. No escribe a
     disco (ver generate() para eso). Asume que el spec YA fue validado
-    contra project_context (ver generate())."""
+    contra project_context (ver generate()).
+
+    derived-column-v1: 'transformations[]' ya no se trata como "como maximo
+    1 elemento, implicitamente data_conversion" -- se busca por 'type'
+    ("data_conversion"/"derived_column"), cada una opcional e independiente
+    (spec_validator.py ya garantiza a lo sumo 1 de cada tipo, y que si
+    coexisten, 'data_conversion' aparece antes que 'derived_column' en la
+    lista -- unico orden evidenciado, ver docs/derived_column_v1.md)."""
     package_name = spec["package"]["name"]
     data_flow = spec["data_flow"]
     data_flow_name = data_flow["name"]
     source_spec = data_flow["source"]
     transformations = data_flow.get("transformations", [])
-    transform_spec = transformations[0] if transformations else None
+    conversion_spec = next(
+        (t for t in transformations if t.get("type") == "data_conversion"), None
+    )
+    derived_column_spec = next(
+        (t for t in transformations if t.get("type") == "derived_column"), None
+    )
     destination_spec = data_flow["destination"]
 
     source_name = source_spec["name"]
-    conversion_name = transform_spec["name"] if transform_spec is not None else None
+    conversion_name = conversion_spec["name"] if conversion_spec is not None else None
+    derived_column_name = (
+        derived_column_spec["name"] if derived_column_spec is not None else None
+    )
     destination_name = destination_spec["name"]
 
     tree = ET.parse(template_path)
@@ -400,21 +431,25 @@ def build_package_tree(
 
     teradata_el = _find_component(components_el, TERADATA_SOURCE_CLASS_ID)
     conversion_el = _find_component(components_el, DATA_CONVERSION_CLASS_ID)
+    derived_column_el = _find_component(components_el, DERIVED_COLUMN_CLASS_ID)
     destination_el = _find_component(components_el, OLE_DB_DESTINATION_CLASS_ID)
 
     # Registro de columnas del pipeline: nombre -> metadata (para resolver
     # lineageId/tipo cacheado desde cualquier componente aguas abajo). Se
-    # completa a medida que se generan Teradata Source y (si existe) Data
-    # Conversion.
+    # completa a medida que se generan Teradata Source, (si existe) Data
+    # Conversion y (si existe) Derived Column, EN ESE ORDEN -- asi el input
+    # de una Derived Column puede resolver tanto una columna de origen como
+    # un output de Data Conversion (evidencia real: ver
+    # docs/derived_column_v1.md, orden topologico).
     pipeline_columns: Dict[str, Dict[str, Any]] = {}
 
     _build_teradata_source(
         teradata_el, data_flow_name, source_name, source_spec, pipeline_columns, project_context
     )
 
-    if transform_spec is not None:
+    if conversion_spec is not None:
         _build_data_conversion(
-            conversion_el, data_flow_name, conversion_name, transform_spec, pipeline_columns
+            conversion_el, data_flow_name, conversion_name, conversion_spec, pipeline_columns
         )
     else:
         # Data Conversion opcional (template-teradata-to-sql-v1): si el spec
@@ -426,6 +461,16 @@ def build_package_tree(
         # proposito en un paquete recien generado.
         components_el.remove(conversion_el)
 
+    if derived_column_spec is not None:
+        _build_derived_column(
+            derived_column_el, data_flow_name, derived_column_name, derived_column_spec, pipeline_columns
+        )
+    else:
+        # Derived Column opcional (derived-column-v1), mismo criterio que
+        # Data Conversion: se ELIMINA del arbol si el spec no la pide, nunca
+        # queda presente pero desconectada.
+        components_el.remove(derived_column_el)
+
     _build_ole_db_destination(
         destination_el,
         data_flow_name,
@@ -436,7 +481,7 @@ def build_package_tree(
     )
 
     _rebuild_paths(
-        pipeline_el, data_flow_name, source_name, conversion_name, destination_name
+        pipeline_el, data_flow_name, source_name, conversion_name, derived_column_name, destination_name
     )
 
     _update_design_time_properties(
@@ -444,10 +489,12 @@ def build_package_tree(
         old_data_flow=TEMPLATE_DATA_FLOW_NAME,
         old_source=TEMPLATE_SOURCE_NAME,
         old_conversion=TEMPLATE_CONVERSION_NAME,
+        old_derived_column=TEMPLATE_DERIVED_COLUMN_NAME,
         old_destination=TEMPLATE_DESTINATION_NAME,
         new_data_flow=data_flow_name,
         new_source=source_name,
         new_conversion=conversion_name,
+        new_derived_column=derived_column_name,
         new_destination=destination_name,
     )
 
@@ -672,6 +719,168 @@ def _build_data_conversion(
         error_output_columns_el.append(err_col)
 
 
+# ---------------------------------------------------------------------------
+# derived-column-v1
+#
+# Unica operacion soportada: 'null_preserving_cast'. Expresion SSIS
+# construida EXACTAMENTE como en las 3 instancias identicas de
+# BipSuc_Turnero.dtsx (Examples/Originals/BipSuc_Turnero.dtsx):
+#
+#   Expression:         [ISNULL](#{<lineageId>}) ? NULL(DT_WSTR,<n>) : (DT_WSTR,<n>)#{<lineageId>}
+#   FriendlyExpression: ISNULL(<nombre>) ? NULL(DT_WSTR,<n>) : (DT_WSTR,<n>)<nombre>
+#
+# 'DT_WSTR' es el UNICO token de tipo de expresion SSIS evidenciado (el
+# unico target_type soportado en v1 es 'wstr', ver
+# derived_planner.schema.SUPPORTED_TARGET_TYPE) -- no se generaliza a otros
+# tokens DT_* sin evidencia real.
+# ---------------------------------------------------------------------------
+NULL_PRESERVING_CAST_EXPRESSION_TYPE_TOKEN = "DT_WSTR"
+
+
+def _build_null_preserving_cast_expression(lineage_id: str, target_length: int) -> str:
+    ref = id_reference_wrapper(lineage_id)
+    return (
+        f"[ISNULL]({ref}) ? NULL({NULL_PRESERVING_CAST_EXPRESSION_TYPE_TOKEN},{target_length}) : "
+        f"({NULL_PRESERVING_CAST_EXPRESSION_TYPE_TOKEN},{target_length}){ref}"
+    )
+
+
+def _build_null_preserving_cast_friendly_expression(input_name: str, target_length: int) -> str:
+    return (
+        f"ISNULL({input_name}) ? NULL({NULL_PRESERVING_CAST_EXPRESSION_TYPE_TOKEN},{target_length}) : "
+        f"({NULL_PRESERVING_CAST_EXPRESSION_TYPE_TOKEN},{target_length}){input_name}"
+    )
+
+
+def _build_derived_column(
+    component_el: ET.Element,
+    data_flow: str,
+    name: str,
+    spec: Dict[str, Any],
+    pipeline_columns: Dict[str, Dict[str, Any]],
+) -> None:
+    """
+    Serializa Microsoft.DerivedColumn replicando exactamente la evidencia
+    real (ver docstring de NULL_PRESERVING_CAST_EXPRESSION_TYPE_TOKEN).
+    Mismo patron que _build_data_conversion: limpia y reconstruye
+    inputColumns/outputColumns desde cero por spec, nunca hereda contenido
+    del template. 'spec' es la entrada 'derived_column' de
+    data_flow.transformations[] (ya validada por spec_validator.py -- unica
+    operation soportada 'null_preserving_cast', unico target_type
+    soportado 'wstr').
+    """
+    component_el.set("refId", component_ref(data_flow, name))
+    component_el.set("name", name)
+    component_el.set("description", name)
+
+    input_el = component_el.find("inputs/input")
+    input_el.set("refId", input_ref(data_flow, name, DERIVED_COLUMN_INPUT_NAME))
+    input_columns_el = input_el.find("inputColumns")
+    _clear_children(input_columns_el, "inputColumn")
+
+    outputs_el = component_el.find("outputs")
+    normal_output = _find_output(outputs_el, is_error=False)
+    error_output = _find_output(outputs_el, is_error=True)
+    normal_output.set("refId", output_ref(data_flow, name, DERIVED_COLUMN_OUTPUT_NAME))
+    normal_output.set("synchronousInputId", input_el.get("refId"))
+    error_output.set("refId", output_ref(data_flow, name, DERIVED_COLUMN_ERROR_OUTPUT_NAME))
+    error_output.set("synchronousInputId", input_el.get("refId"))
+
+    output_columns_el = normal_output.find("outputColumns")
+    _clear_children(output_columns_el, "outputColumn")
+    error_output_columns_el = error_output.find("outputColumns")
+    _clear_children(error_output_columns_el, "outputColumn")
+
+    # Un Derived Column real puede referenciar la MISMA columna de entrada
+    # desde mas de una expresion -- se registra <inputColumn> una sola vez
+    # por nombre de origen distinto (mismo criterio que evitar refIds
+    # duplicados en cualquier otro componente).
+    registered_inputs: set = set()
+
+    for col in spec["columns"]:
+        input_name = col["input"]
+        output_name = col["output"]
+        operation = col["operation"]
+        target_type = col["target_type"]
+        target_length = col["target_length"]
+
+        source_meta = pipeline_columns.get(input_name)
+        if source_meta is None:
+            raise GeneratorError(
+                f"Derived Column: input '{input_name}' no esta registrado en el "
+                "pipeline (deberia haber sido detectado por spec_validator)."
+            )
+
+        if operation != "null_preserving_cast":
+            # No deberia llegar aca: spec_validator.py ya rechaza cualquier
+            # otra operation antes de generar (unica soportada en
+            # derived-column-v1). Ver derived_planner/schema.py.
+            raise GeneratorError(
+                f"Derived Column: operation {operation!r} no soportada por "
+                "derived-column-v1 (unica soportada: 'null_preserving_cast')."
+            )
+
+        if input_name not in registered_inputs:
+            in_ref = input_column_ref(data_flow, name, DERIVED_COLUMN_INPUT_NAME, input_name)
+            input_columns_el.append(
+                _make_input_column(
+                    in_ref,
+                    input_name,
+                    source_meta["data_type"],
+                    cached_length=source_meta.get("length"),
+                    cached_code_page=source_meta.get("code_page"),
+                    cached_precision=source_meta.get("precision"),
+                    cached_scale=source_meta.get("scale"),
+                    lineage_id=source_meta["lineage_id"],
+                )
+            )
+            registered_inputs.add(input_name)
+
+        out_ref = output_column_ref(data_flow, name, DERIVED_COLUMN_OUTPUT_NAME, output_name)
+        out_col = _make_output_column(
+            out_ref,
+            output_name,
+            target_type,
+            length=target_length,
+            lineage_id=out_ref,
+            error_or_truncation_operation="Cálculo",
+            error_row_disposition="FailComponent",
+            truncation_row_disposition="FailComponent",
+        )
+
+        properties_el = ET.SubElement(out_col, "properties")
+        expression_prop = ET.SubElement(properties_el, "property")
+        expression_prop.set("containsID", "true")
+        expression_prop.set("dataType", "System.String")
+        expression_prop.set("description", "Expresión de columna derivada")
+        expression_prop.set("name", "Expression")
+        expression_prop.text = _build_null_preserving_cast_expression(
+            source_meta["lineage_id"], target_length
+        )
+
+        friendly_prop = ET.SubElement(properties_el, "property")
+        friendly_prop.set("containsID", "true")
+        friendly_prop.set("dataType", "System.String")
+        friendly_prop.set("description", "Expresión descriptiva de columna derivada")
+        friendly_prop.set("expressionType", "Notify")
+        friendly_prop.set("name", "FriendlyExpression")
+        friendly_prop.text = _build_null_preserving_cast_friendly_expression(input_name, target_length)
+
+        output_columns_el.append(out_col)
+
+        pipeline_columns[output_name] = {
+            "lineage_id": out_ref,
+            "data_type": target_type,
+            "length": target_length,
+            "code_page": None,
+            "precision": None,
+            "scale": None,
+        }
+
+    for err_col in _make_error_columns(data_flow, name, DERIVED_COLUMN_ERROR_OUTPUT_NAME):
+        error_output_columns_el.append(err_col)
+
+
 def _build_ole_db_destination(
     component_el: ET.Element,
     data_flow: str,
@@ -768,41 +977,55 @@ def _rebuild_paths(
     data_flow: str,
     source_name: str,
     conversion_name: Optional[str],
+    derived_column_name: Optional[str],
     destination_name: str,
 ) -> None:
     """
-    Topologia dinamica (template-teradata-to-sql-v1):
-    - Con Data Conversion (conversion_name no None): 2 paths, igual que
-      siempre — Source -> Conversion -> Destination.
-    - Sin Data Conversion (conversion_name es None): 1 solo path, Source ->
-      Destination directo. El NOMBRE de ese path sigue siendo PATH_1_NAME
-      ("Teradata Source Output", el nombre del output que lo origina, ver
-      docs/xml_patterns.md §6) — no cambia solo porque cambie su endId.
+    Topologia dinamica: Source -> [Data Conversion] -> [Derived Column] ->
+    Destination. derived-column-v1 generaliza el mecanismo ya existente de
+    template-teradata-to-sql-v1 (que solo conocia Source -> [Conversion] ->
+    Destination) a una cadena de "paradas" opcionales, preservando el
+    comportamiento EXACTO de los 2 casos ya soportados:
+    - Sin Data Conversion ni Derived Column: 1 path directo Source ->
+      Destination (igual que siempre).
+    - Con Data Conversion, sin Derived Column: 2 paths, igual que siempre.
+
+    Casos nuevos (evidencia: BipSuc_Turnero.dtsx, unico orden real
+    disponible cuando ambas transformaciones coexisten -- Data Conversion
+    ANTES que Derived Column, nunca al reves, ver spec_validator.py):
+    - Sin Data Conversion, con Derived Column: 2 paths, Source -> Derived
+      Column -> Destination.
+    - Con ambas: 3 paths, Source -> Conversion -> Derived Column -> Destination.
+
+    El NOMBRE de cada path es SIEMPRE el del output que lo origina
+    (convencion ya establecida en template-teradata-to-sql-v1, ver
+    docs/xml_patterns.md §6) — nunca cambia solo porque cambie su endId.
+    PATH_1_NAME == SOURCE_OUTPUT_NAME, PATH_2_NAME == CONVERSION_OUTPUT_NAME,
+    PATH_3_NAME == DERIVED_COLUMN_OUTPUT_NAME: los 3 nombres posibles ya son
+    exactamente los nombres de output de cada etapa, sin necesidad de un
+    caso especial para la primera "parada".
     """
     paths_el = pipeline_el.find("paths")
     _clear_children(paths_el, "path")
 
+    # (nombre_componente, nombre_de_su_output, nombre_de_su_input) -- el
+    # primer elemento (Source) no tiene "input" propio en esta cadena (es
+    # el origen); el ultimo (Destination) no tiene "output" propio (es el
+    # final). Solo se listan las "paradas" intermedias que el spec pidio.
+    stops: List[tuple] = [(source_name, SOURCE_OUTPUT_NAME, None)]
     if conversion_name is not None:
-        path1 = ET.Element("path")
-        path1.set("refId", path_ref(data_flow, PATH_1_NAME))
-        path1.set("endId", input_ref(data_flow, conversion_name, CONVERSION_INPUT_NAME))
-        path1.set("name", PATH_1_NAME)
-        path1.set("startId", output_ref(data_flow, source_name, SOURCE_OUTPUT_NAME))
-        paths_el.append(path1)
+        stops.append((conversion_name, CONVERSION_OUTPUT_NAME, CONVERSION_INPUT_NAME))
+    if derived_column_name is not None:
+        stops.append((derived_column_name, DERIVED_COLUMN_OUTPUT_NAME, DERIVED_COLUMN_INPUT_NAME))
+    stops.append((destination_name, None, DESTINATION_INPUT_NAME))
 
-        path2 = ET.Element("path")
-        path2.set("refId", path_ref(data_flow, PATH_2_NAME))
-        path2.set("endId", input_ref(data_flow, destination_name, DESTINATION_INPUT_NAME))
-        path2.set("name", PATH_2_NAME)
-        path2.set("startId", output_ref(data_flow, conversion_name, CONVERSION_OUTPUT_NAME))
-        paths_el.append(path2)
-    else:
-        direct_path = ET.Element("path")
-        direct_path.set("refId", path_ref(data_flow, PATH_1_NAME))
-        direct_path.set("endId", input_ref(data_flow, destination_name, DESTINATION_INPUT_NAME))
-        direct_path.set("name", PATH_1_NAME)
-        direct_path.set("startId", output_ref(data_flow, source_name, SOURCE_OUTPUT_NAME))
-        paths_el.append(direct_path)
+    for (from_name, from_output, _), (to_name, _, to_input) in zip(stops, stops[1:]):
+        path_el = ET.Element("path")
+        path_el.set("refId", path_ref(data_flow, from_output))
+        path_el.set("name", from_output)
+        path_el.set("startId", output_ref(data_flow, from_name, from_output))
+        path_el.set("endId", input_ref(data_flow, to_name, to_input))
+        paths_el.append(path_el)
 
 
 def _update_design_time_properties(
@@ -816,6 +1039,8 @@ def _update_design_time_properties(
     new_source: str,
     new_conversion: Optional[str],
     new_destination: str,
+    old_derived_column: str = TEMPLATE_DERIVED_COLUMN_NAME,
+    new_derived_column: Optional[str] = None,
 ) -> None:
     """
     new_conversion es None cuando el spec no declara Data Conversion. En ese
@@ -824,7 +1049,8 @@ def _update_design_time_properties(
     renombrarse — ya no existe ningun componente/path en el documento
     principal al que puedan seguir apuntando. PATH_1_NAME se renombra igual
     en los dos casos: es el mismo path (Source -> algo), solo cambia su
-    destino final, no su identidad.
+    destino final, no su identidad. Mismo criterio para new_derived_column
+    (derived-column-v1).
     """
     dtp_el = root.find(dts("DesignTimeProperties"))
     if dtp_el is None or dtp_el.text is None:
@@ -846,6 +1072,15 @@ def _update_design_time_properties(
     else:
         removed_refs.add(component_ref(old_data_flow, old_conversion))
         removed_refs.add(path_ref(old_data_flow, PATH_2_NAME))
+
+    if new_derived_column is not None:
+        ref_id_map[component_ref(old_data_flow, old_derived_column)] = component_ref(
+            new_data_flow, new_derived_column
+        )
+        ref_id_map[path_ref(old_data_flow, PATH_3_NAME)] = path_ref(new_data_flow, PATH_3_NAME)
+    else:
+        removed_refs.add(component_ref(old_data_flow, old_derived_column))
+        removed_refs.add(path_ref(old_data_flow, PATH_3_NAME))
 
     dtp_el.text = _rewrite_design_time_properties(dtp_el.text, ref_id_map, removed_refs)
 

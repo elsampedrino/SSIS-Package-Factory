@@ -1,0 +1,52 @@
+{
+  "package": {
+    "name": "DerivedColumnV1_E2E"
+  },
+  "data_flow": {
+    "name": "Tarea Flujo de datos",
+    "source": {
+      "type": "teradata",
+      "name": "Teradata Source",
+      "connection": "cnxTeradata",
+      "sql": "SELECT\n    CODIGO_CAMPANIA,\n    CAST(CAST(FEC_INICIO AS DATE FORMAT 'YYYY-MM-DD') AS CHAR(10)) AS FEC_INICIO_TXT,\n    PLASTICOSUDN\nFROM D_DERIVED_COLUMN_V1_E2E",
+      "columns": [
+        {"name": "CODIGO_CAMPANIA", "data_type": "i4"},
+        {"name": "FEC_INICIO_TXT", "data_type": "str", "length": 10, "code_page": 1252},
+        {"name": "PLASTICOSUDN", "data_type": "i2"}
+      ]
+    },
+    "transformations": [
+      {
+        "type": "data_conversion",
+        "name": "Conversión de datos",
+        "conversions": [
+          {"input": "FEC_INICIO_TXT", "output": "FechaInicio_SAL", "target_type": "dbDate"}
+        ]
+      },
+      {
+        "type": "derived_column",
+        "name": "Columna derivada",
+        "columns": [
+          {
+            "input": "PLASTICOSUDN",
+            "output": "PLASTICOSUDN__derived",
+            "operation": "null_preserving_cast",
+            "target_type": "wstr",
+            "target_length": 6
+          }
+        ]
+      }
+    ],
+    "destination": {
+      "type": "ole_db",
+      "name": "Destino de OLE DB",
+      "connection": "cnxSrvBsLogSBD01",
+      "table": "[dbo].[DerivedColumnV1E2E]",
+      "mappings": [
+        {"source": "CODIGO_CAMPANIA", "target": "CodigoCampania", "target_data_type": "i4"},
+        {"source": "FechaInicio_SAL", "target": "FechaInicio", "target_data_type": "wstr", "target_length": 27},
+        {"source": "PLASTICOSUDN__derived", "target": "PlasticosUdn", "target_data_type": "wstr", "target_length": 6}
+      ]
+    }
+  }
+}

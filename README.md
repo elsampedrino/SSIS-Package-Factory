@@ -30,6 +30,7 @@ producción — la ejecución confirmada fue en QA.
 | `control-flow-v1` | 🚫 **BLOCKED / EXPERIMENTAL** — SSDT `LoadFromXML` incompatibility not diagnosed | `docs/control_flow_v1.md` |
 | `teradata-to-sql-profile-v1` | ✅ **STABLE / SSDT VALIDATED** — capa opcional de defaults corporativos (`profiles/`) sobre `project-generation-v1`/`TERADATA_TO_SQL v1.1`, Gate SSDT confirmado manualmente | `docs/teradata_to_sql_profile_v1.md` |
 | `mapping-planner-v1` | ✅ **STABLE / SSDT VALIDATED** — clasifica mappings (`DIRECT`/`CONVERSION_REQUIRED`/`AMBIGUOUS`/`UNSAFE`/`UNSUPPORTED`) y traduce a `ProcessSpec` sin tocar `TERADATA_TO_SQL v1.1`; Gate SSDT confirmado manualmente | `docs/mapping_planner_v1.md` |
+| `derived-column-v1` | ✅ **STABLE / SSDT VALIDATED** — agrega `Microsoft.DerivedColumn` (patrón `null_preserving_cast`, `i2`/`i4`/`i8`→`wstr`, regla de seguridad de capacidad teórica) vía `derived_planner/`, extensión aditiva de `ProcessSpec`/`TERADATA_TO_SQL v1.1`; Gate SSDT confirmado manualmente | `docs/derived_column_v1.md` |
 
 `template-teradata-to-sql-v1.1` sigue siendo la última familia de generación
 de *packages* completamente estable: Teradata Source, OLE DB/SQL Server
@@ -69,7 +70,19 @@ regla de conversión conocida) y traduce el resultado a un fragmento de
 `ProcessSpec` (Data Conversion + `destination.mappings[]`), consumido sin
 ningún cambio por `generator/campanias_generator.py`/`generator/spec_validator.py`
 — Gate SSDT confirmado manualmente y 371/371 tests en verde — ver
-`docs/mapping_planner_v1.md`.
+`docs/mapping_planner_v1.md`. `derived-column-v1` agrega el primer patrón
+de columna calculada (`derived_planner/`, Python puro) sobre
+`TERADATA_TO_SQL v1.1`: `Microsoft.DerivedColumn` con una única operación
+soportada (`null_preserving_cast`, `i2`/`i4`/`i8`→`wstr`) y una regla de
+seguridad de capacidad teórica (nunca inferida de datos observados) que
+bloquea la generación si la longitud declarada es insuficiente — motivado
+por un incidente real de truncamiento silencioso (ver
+`docs/derived_column_v1.md`). Topología soportada: Source → [Data
+Conversion] → [Derived Column] → Destination, en cualquier combinación —
+Gate SSDT confirmado manualmente y 434/434 tests en verde.
+
+Próximo milestone planificado: `template-teradata-to-flat-file-v1`
+(compatibilidad con Flat File Destination) — no iniciado todavía.
 
 ### Regla metodológica (agregada tras `control-flow-v1`)
 
