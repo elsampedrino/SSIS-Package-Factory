@@ -37,6 +37,35 @@ STRING_DATA_TYPES = {"str", "wstr"}
 NON_UNICODE_STRING_TYPE = "str"
 NUMERIC_DATA_TYPE = "numeric"
 
+# template-teradata-to-flat-file-v1: segundo tipo de destino soportado,
+# ademas de 'ole_db' -- ver docs/template_teradata_to_flat_file_v1.md.
+# Decision de equipo "SQL-first" (evidencia real: 4 packages del proyecto
+# MediosDePago): esta familia NUNCA usa 'transformations[]' en su happy
+# path (Data Conversion/Derived Column se resuelven en el SQL del origen,
+# no en el pipeline) -- por eso 'destination.type=flat_file' no interactua
+# con SUPPORTED_TRANSFORMATION_TYPES/derived_column, son ortogonales.
+FLAT_FILE_DESTINATION_TYPE = "flat_file"
+SUPPORTED_DESTINATION_TYPES = {SUPPORTED_DESTINATION_TYPE, FLAT_FILE_DESTINATION_TYPE}
+
+# Formats evidenciados en el corpus real (ver auditoria): RaggedRight en 3/4
+# packages, Delimited en 1/4 (TarjetaDebitoSinUsoLink, una sola columna).
+# FixedWidth queda fuera de v1 por falta de evidencia.
+SUPPORTED_FLAT_FILE_FORMATS = {"ragged_right", "delimited"}
+
+# HeaderRowDelimiter: unicos 2 valores evidenciados (CRLF en 3/4, SEMICOLON
+# en TarjetaDebitoSinUsoLink). Token amigable en el spec, nunca la forma
+# cruda '_x...' de SSIS (ver generator/flat_file_generator.py).
+SUPPORTED_HEADER_ROW_DELIMITERS = {"CRLF", "SEMICOLON"}
+
+# TextQualifier: unico valor evidenciado en los 4 packages ('<none>').
+SUPPORTED_TEXT_QUALIFIERS = {"none"}
+
+# DataType de columna Flat File: unicos 2 evidenciados (str en 3/4 packages
+# completos + parte de Tokenizacion; wstr en el resto de Tokenizacion, un
+# caso de coercion interna del propio Flat File Destination sin Data
+# Conversion -- ver docs/template_teradata_to_flat_file_v1.md, "str -> wstr").
+SUPPORTED_FLAT_FILE_COLUMN_DATA_TYPES = {"str", "wstr"}
+
 # derived-column-v1: segundo tipo de transformacion soportado, ademas de
 # 'data_conversion' -- ver docs/derived_column_v1.md. A lo sumo UN elemento
 # de CADA tipo por Data Flow (nunca 2 del mismo tipo); si ambos coexisten,
@@ -152,6 +181,214 @@ def _validate_optional_teradata_source_sessions(
         errors.append(f"'{label}.min_sessions', si esta presente, debe ser entero positivo.")
     if "max_sessions" in source and not _positive_int(source.get("max_sessions")):
         errors.append(f"'{label}.max_sessions', si esta presente, debe ser entero positivo.")
+    return errors
+
+
+def _validate_flat_file_destination(
+    destination: Dict[str, Any],
+    pipeline_columns: set,
+    project_parameters: List[Dict[str, Any]],
+    label: str,
+) -> List[str]:
+    """
+    template-teradata-to-flat-file-v1. Valida 'destination.connection_manager'
+    (Flat File Connection Manager PACKAGE-level, declarado inline -- ver
+    docs/template_teradata_to_flat_file_v1.md, "Separacion WHAT/WHERE") y
+    'destination.columns' (UNA sola lista que sirve de mapping Y de schema
+    fisico del archivo -- nunca dos declaraciones paralelas del mismo dato).
+
+    Deliberadamente NO usa mapping_planner: la decision de equipo "SQL-first"
+    exige mappings explicitos, nunca inferidos por capacidad/longitud (ver
+    docs/template_teradata_to_flat_file_v1.md, "Mapping Planner" -- el gap de
+    longitud-fuente-no-confiable de columnas TO_CHAR haria que la regla
+    UNSAFE de mapping_planner rechace mappings reales validos).
+    """
+    errors: List[str] = []
+    parameter_names = {p.get("name") for p in project_parameters}
+
+    cm = destination.get("connection_manager")
+    if not isinstance(cm, dict):
+        errors.append(f"Falta '{label}.destination.connection_manager' (objeto).")
+        cm = {}
+    else:
+        if not _non_empty_str(cm.get("name")):
+            errors.append(
+                f"'{label}.destination.connection_manager.name' es obligatorio y "
+                "no puede estar vacio."
+            )
+        if cm.get("format") not in SUPPORTED_FLAT_FILE_FORMATS:
+            errors.append(
+                f"'{label}.destination.connection_manager.format' debe ser uno de "
+                f"{sorted(SUPPORTED_FLAT_FILE_FORMATS)}; vino: {cm.get('format')!r}."
+            )
+        if not _positive_int(cm.get("code_page")):
+            errors.append(
+                f"'{label}.destination.connection_manager.code_page' es obligatorio "
+                "y debe ser entero positivo."
+            )
+        if not _positive_int(cm.get("locale_id")):
+            errors.append(
+                f"'{label}.destination.connection_manager.locale_id' es obligatorio "
+                "y debe ser entero positivo."
+            )
+        unicode_value = cm.get("unicode")
+        if not isinstance(unicode_value, bool):
+            errors.append(
+                f"'{label}.destination.connection_manager.unicode' es obligatorio "
+                "y debe ser booleano explicito (true/false) -- no se infiere ni "
+                "se defaultea silenciosamente."
+            )
+        elif unicode_value is True:
+            errors.append(
+                f"'{label}.destination.connection_manager.unicode' = true no tiene "
+                "evidencia real en el corpus auditado (los 4 packages son "
+                "Unicode=false, CodePage=1252) -- no soportado en v1."
+            )
+        if cm.get("header_row_delimiter") not in SUPPORTED_HEADER_ROW_DELIMITERS:
+            errors.append(
+                f"'{label}.destination.connection_manager.header_row_delimiter' debe "
+                f"ser uno de {sorted(SUPPORTED_HEADER_ROW_DELIMITERS)}; "
+                f"vino: {cm.get('header_row_delimiter')!r}."
+            )
+        if cm.get("text_qualifier") not in SUPPORTED_TEXT_QUALIFIERS:
+            errors.append(
+                f"'{label}.destination.connection_manager.text_qualifier' debe ser "
+                f"uno de {sorted(SUPPORTED_TEXT_QUALIFIERS)}; "
+                f"vino: {cm.get('text_qualifier')!r}."
+            )
+
+        filename = cm.get("filename")
+        if not isinstance(filename, dict):
+            errors.append(
+                f"Falta '{label}.destination.connection_manager.filename' (objeto)."
+            )
+        else:
+            parameter = filename.get("parameter")
+            literal = filename.get("literal")
+            variable = filename.get("variable")
+            if parameter is None and literal is None and variable is None:
+                errors.append(
+                    f"'{label}.destination.connection_manager.filename' requiere al "
+                    "menos uno de: 'parameter', 'literal', 'variable' -- no se "
+                    "acepta una expresion generica sin estructurar."
+                )
+            if parameter is not None:
+                if not _non_empty_str(parameter):
+                    errors.append(
+                        f"{label}.destination.connection_manager.filename.parameter, "
+                        "si esta presente, no puede estar vacio."
+                    )
+                elif parameter not in parameter_names:
+                    errors.append(
+                        f"{label}.destination.connection_manager.filename.parameter "
+                        f"= '{parameter}' no existe entre los parameters del "
+                        f"proyecto (ProjectContext): {sorted(n for n in parameter_names if n)}."
+                    )
+            if literal is not None and not _non_empty_str(literal):
+                errors.append(
+                    f"{label}.destination.connection_manager.filename.literal, si "
+                    "esta presente, no puede estar vacio."
+                )
+            if variable is not None:
+                if not isinstance(variable, dict):
+                    errors.append(
+                        f"{label}.destination.connection_manager.filename.variable "
+                        "debe ser un objeto."
+                    )
+                else:
+                    if not _non_empty_str(variable.get("name")):
+                        errors.append(
+                            f"{label}.destination.connection_manager.filename.variable.name "
+                            "es obligatorio y no puede estar vacio."
+                        )
+                    if not _non_empty_str(variable.get("value")):
+                        errors.append(
+                            f"{label}.destination.connection_manager.filename.variable.value "
+                            "es obligatorio y no puede estar vacio."
+                        )
+
+    columns = destination.get("columns")
+    if not isinstance(columns, list) or len(columns) == 0:
+        errors.append(f"'{label}.destination.columns' debe ser una lista no vacia.")
+        columns = []
+
+    seen_targets = set()
+    terminator_indexes = []
+    for idx, col in enumerate(columns):
+        c_label = f"{label}.destination.columns[{idx}]"
+        if not isinstance(col, dict):
+            errors.append(f"{c_label} debe ser un objeto.")
+            continue
+
+        target = col.get("target")
+        if not _non_empty_str(target):
+            errors.append(f"{c_label}.target es obligatorio y no puede estar vacio.")
+        else:
+            if target in seen_targets:
+                errors.append(
+                    f"{c_label}.target = '{target}' colisiona con otra columna del "
+                    "archivo (los nombres de columna del Flat File deben ser "
+                    "unicos entre si)."
+                )
+            seen_targets.add(target)
+
+        is_terminator = bool(col.get("row_terminator"))
+        if is_terminator:
+            terminator_indexes.append(idx)
+
+        source = col.get("source")
+        if source is not None:
+            if not _non_empty_str(source):
+                errors.append(f"{c_label}.source, si esta presente, no puede estar vacio.")
+            elif source not in pipeline_columns:
+                errors.append(
+                    f"{c_label}.source = '{source}' no existe entre las columnas "
+                    f"declaradas en {label}.source.columns."
+                )
+
+        target_data_type = col.get("target_data_type")
+        target_length = col.get("target_length")
+        # Columna sentinel pura (row_terminator=true, sin source ni metadata
+        # de datos real, ej. 'EndLine'): target_data_type/target_length
+        # quedan OPCIONALES. Cualquier otra columna (terminator con datos
+        # reales, o columna normal) los requiere siempre.
+        is_pure_sentinel = is_terminator and source is None and target_data_type is None and target_length is None
+        if not is_pure_sentinel:
+            if target_data_type not in SUPPORTED_FLAT_FILE_COLUMN_DATA_TYPES:
+                errors.append(
+                    f"{c_label}.target_data_type debe ser uno de "
+                    f"{sorted(SUPPORTED_FLAT_FILE_COLUMN_DATA_TYPES)}; "
+                    f"vino: {target_data_type!r}."
+                )
+            if not _positive_int(target_length):
+                errors.append(
+                    f"{c_label}.target_length es obligatorio y debe ser entero positivo."
+                )
+        target_code_page = col.get("target_code_page")
+        if target_code_page is not None and not _positive_int(target_code_page):
+            errors.append(
+                f"{c_label}.target_code_page, si esta presente, debe ser entero positivo."
+            )
+
+    if len(terminator_indexes) == 0:
+        errors.append(
+            f"'{label}.destination.columns' debe tener exactamente 1 columna con "
+            "'row_terminator: true' (el terminador de fila, ver "
+            "docs/template_teradata_to_flat_file_v1.md, 'Ragged Right') -- no se "
+            "encontro ninguna."
+        )
+    elif len(terminator_indexes) > 1:
+        errors.append(
+            f"'{label}.destination.columns' tiene {len(terminator_indexes)} columnas "
+            "con 'row_terminator: true' -- debe haber exactamente 1."
+        )
+    elif terminator_indexes[0] != len(columns) - 1:
+        errors.append(
+            f"'{label}.destination.columns': la columna con 'row_terminator: true' "
+            "debe ser la ULTIMA de la lista (unico orden evidenciado en el corpus "
+            "real -- el terminador de fila siempre va al final)."
+        )
+
     return errors
 
 
@@ -505,58 +742,78 @@ def validate_spec(spec: Dict[str, Any], project_context: Dict[str, Any]) -> List
         )
 
     # -----------------------------------------------------------------
-    # destination
+    # destination — 'ole_db' (sin cambios) o 'flat_file'
+    # (template-teradata-to-flat-file-v1, ver _validate_flat_file_destination).
+    # Los dos tipos son mutuamente excluyentes y cada uno valida su propia
+    # forma de 'destination' -- no comparten 'mappings'/'connection'/'table'
+    # (ole_db) vs 'connection_manager'/'columns' (flat_file).
     # -----------------------------------------------------------------
     destination = data_flow.get("destination")
     if not isinstance(destination, dict):
         errors.append("Falta 'data_flow.destination' (objeto).")
-        destination = {}
-    else:
-        if destination.get("type") != SUPPORTED_DESTINATION_TYPE:
-            errors.append(
-                f"'data_flow.destination.type' debe ser '{SUPPORTED_DESTINATION_TYPE}' "
-                f"(este MVP no soporta otro tipo de destino); vino: {destination.get('type')!r}."
-            )
-        if not _non_empty_str(destination.get("name")):
-            errors.append("'data_flow.destination.name' es obligatorio y no puede estar vacio.")
-        if not _non_empty_str(destination.get("connection")):
-            errors.append(
-                "'data_flow.destination.connection' es obligatorio y no puede estar vacio."
-            )
-        else:
-            errors.extend(
-                _validate_connection_reference(
-                    label="data_flow.destination.connection",
-                    connection_name=destination["connection"],
-                    expected_provider=EXPECTED_DESTINATION_PROVIDER,
-                    project_connections=project_connections,
-                )
-            )
-        if not _non_empty_str(destination.get("table")):
-            errors.append("'data_flow.destination.table' es obligatorio y no puede estar vacio.")
+        return errors
 
-        # access_mode: OPCIONAL. Ausente -> el generator preserva el valor
-        # que ya trae el template (0, igual que Campanias real). Presente ->
-        # sobrescribe la property "AccessMode" del OLE DB Destination (ver
-        # generator/campanias_generator.py::_build_ole_db_destination).
-        #
-        # Solo se valida el TIPO (entero >= 0, igual criterio que 'scale'),
-        # no un enum cerrado de valores permitidos: la evidencia real
-        # disponible son unicamente 0 (Campanias) y 3 (PagosYRecaudaciones) --
-        # ver docs/template_teradata_to_sql_v1_generalization_pagosyrecaudaciones.md.
-        # Restringir a un conjunto fijo (p.ej. 0-4, el rango tipico del
-        # dropdown "Data access mode" de OLE DB Destination en SSDT)
-        # codificaria una suposicion sobre el enum interno de SSIS que esta
-        # auditoria no pudo confirmar de forma independiente para todos sus
-        # valores -- se prefiere no inferir mas alla de lo evidenciado.
-        if "access_mode" in destination and not _non_negative_int(
-            destination.get("access_mode")
-        ):
-            errors.append(
-                "'data_flow.destination.access_mode', si esta presente, debe "
-                "ser un entero >= 0 (valor crudo de la property AccessMode "
-                "del OLE DB Destination)."
+    destination_type = destination.get("type")
+    if destination_type not in SUPPORTED_DESTINATION_TYPES:
+        errors.append(
+            f"'data_flow.destination.type' debe ser uno de "
+            f"{sorted(SUPPORTED_DESTINATION_TYPES)}; vino: {destination_type!r}."
+        )
+        return errors
+
+    if not _non_empty_str(destination.get("name")):
+        errors.append("'data_flow.destination.name' es obligatorio y no puede estar vacio.")
+
+    if destination_type == FLAT_FILE_DESTINATION_TYPE:
+        project_parameters = (
+            project_context.get("parameters", []) if isinstance(project_context, dict) else []
+        )
+        errors.extend(
+            _validate_flat_file_destination(
+                destination, pipeline_columns, project_parameters, "data_flow"
             )
+        )
+        return errors
+
+    # --- ole_db: sin cambios de comportamiento ---
+    if not _non_empty_str(destination.get("connection")):
+        errors.append(
+            "'data_flow.destination.connection' es obligatorio y no puede estar vacio."
+        )
+    else:
+        errors.extend(
+            _validate_connection_reference(
+                label="data_flow.destination.connection",
+                connection_name=destination["connection"],
+                expected_provider=EXPECTED_DESTINATION_PROVIDER,
+                project_connections=project_connections,
+            )
+        )
+    if not _non_empty_str(destination.get("table")):
+        errors.append("'data_flow.destination.table' es obligatorio y no puede estar vacio.")
+
+    # access_mode: OPCIONAL. Ausente -> el generator preserva el valor
+    # que ya trae el template (0, igual que Campanias real). Presente ->
+    # sobrescribe la property "AccessMode" del OLE DB Destination (ver
+    # generator/campanias_generator.py::_build_ole_db_destination).
+    #
+    # Solo se valida el TIPO (entero >= 0, igual criterio que 'scale'),
+    # no un enum cerrado de valores permitidos: la evidencia real
+    # disponible son unicamente 0 (Campanias) y 3 (PagosYRecaudaciones) --
+    # ver docs/template_teradata_to_sql_v1_generalization_pagosyrecaudaciones.md.
+    # Restringir a un conjunto fijo (p.ej. 0-4, el rango tipico del
+    # dropdown "Data access mode" de OLE DB Destination en SSDT)
+    # codificaria una suposicion sobre el enum interno de SSIS que esta
+    # auditoria no pudo confirmar de forma independiente para todos sus
+    # valores -- se prefiere no inferir mas alla de lo evidenciado.
+    if "access_mode" in destination and not _non_negative_int(
+        destination.get("access_mode")
+    ):
+        errors.append(
+            "'data_flow.destination.access_mode', si esta presente, debe "
+            "ser un entero >= 0 (valor crudo de la property AccessMode "
+            "del OLE DB Destination)."
+        )
 
     mappings = destination.get("mappings") if isinstance(destination, dict) else None
     if not isinstance(mappings, list) or len(mappings) == 0:

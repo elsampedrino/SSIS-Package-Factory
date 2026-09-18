@@ -31,6 +31,7 @@ producción — la ejecución confirmada fue en QA.
 | `teradata-to-sql-profile-v1` | ✅ **STABLE / SSDT VALIDATED** — capa opcional de defaults corporativos (`profiles/`) sobre `project-generation-v1`/`TERADATA_TO_SQL v1.1`, Gate SSDT confirmado manualmente | `docs/teradata_to_sql_profile_v1.md` |
 | `mapping-planner-v1` | ✅ **STABLE / SSDT VALIDATED** — clasifica mappings (`DIRECT`/`CONVERSION_REQUIRED`/`AMBIGUOUS`/`UNSAFE`/`UNSUPPORTED`) y traduce a `ProcessSpec` sin tocar `TERADATA_TO_SQL v1.1`; Gate SSDT confirmado manualmente | `docs/mapping_planner_v1.md` |
 | `derived-column-v1` | ✅ **STABLE / SSDT VALIDATED** — agrega `Microsoft.DerivedColumn` (patrón `null_preserving_cast`, `i2`/`i4`/`i8`→`wstr`, regla de seguridad de capacidad teórica) vía `derived_planner/`, extensión aditiva de `ProcessSpec`/`TERADATA_TO_SQL v1.1`; Gate SSDT confirmado manualmente | `docs/derived_column_v1.md` |
+| `template-teradata-to-flat-file-v1` | ✅ **STABLE / SSDT VALIDATED** — nueva familia `TERADATA_TO_FLAT_FILE` (Teradata Source → Flat File Destination, principio SQL-first, sin Data Conversion/Derived Column), Flat File Connection Manager package-level, RaggedRight/Delimited, mappings explícitos (sin Mapping/Derived Planner); MoveFile fuera de scope (Control Flow concern); Gate SSDT confirmado manualmente (2 defectos detectados en el primer Gate, ambos corregidos; known SSDT designer quirk documentado sin defecto de serialización demostrado) | `docs/template_teradata_to_flat_file_v1.md` |
 
 `template-teradata-to-sql-v1.1` sigue siendo la última familia de generación
 de *packages* completamente estable: Teradata Source, OLE DB/SQL Server
@@ -81,8 +82,22 @@ por un incidente real de truncamiento silencioso (ver
 Conversion] → [Derived Column] → Destination, en cualquier combinación —
 Gate SSDT confirmado manualmente y 434/434 tests en verde.
 
-Próximo milestone planificado: `template-teradata-to-flat-file-v1`
-(compatibilidad con Flat File Destination) — no iniciado todavía.
+`template-teradata-to-flat-file-v1` agrega la familia `TERADATA_TO_FLAT_FILE`
+(Teradata Source → Flat File Destination), basada en 4 packages reales del
+proyecto `MediosDePago`: principio SQL-first (sin Data Conversion/Derived
+Column en el happy path, todo el formato se resuelve en el SQL de origen),
+Flat File Connection Manager package-level (RaggedRight GO, Delimited GO CON
+RESTRICCIONES), mappings/schema explícitos (`mapping_planner`/`derived_planner`
+no se usan automáticamente — gap real de longitud-fuente documentado). El
+movimiento posterior del archivo (`MoveFile`, evidenciado en 3/4 packages
+como excepción operativa, no como patrón estándar) queda `DEFERRED / CONTROL
+FLOW CONCERN`, sin depender de `control-flow-v1` — confirmado con un cuarto
+package real (`TarjetaDebitoSinUsoLink`) que escribe directo a red sin ningún
+paso intermedio. Holdout real (`Tokenizacion`, mezcla `str`/`wstr`)
+representado correctamente sin ampliar scope — Gate SSDT confirmado
+manualmente (incluyendo un known designer quirk del Teradata Source
+documentado sin defecto de serialización demostrado, ver
+`docs/template_teradata_to_flat_file_v1.md`) y 511/511 tests en verde.
 
 ### Regla metodológica (agregada tras `control-flow-v1`)
 

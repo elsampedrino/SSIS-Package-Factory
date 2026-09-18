@@ -1107,6 +1107,22 @@ def generate(
 
     ET.register_namespace("DTS", NS["DTS"])
 
-    root = build_package_tree(spec, project_context, template_path)
+    destination_type = spec.get("data_flow", {}).get("destination", {}).get("type")
+    if destination_type == "flat_file":
+        # template-teradata-to-flat-file-v1: familia separada (Flat File
+        # Connection Manager package-level + Flat File Destination, SIN Data
+        # Conversion/Derived Column -- decision de equipo "SQL-first", ver
+        # docs/template_teradata_to_flat_file_v1.md). Import diferido para
+        # evitar un ciclo (flat_file_generator importa helpers de este mismo
+        # modulo). Distincion ESTRUCTURAL por 'destination.type', nunca por
+        # heuristica de nombres.
+        from .flat_file_generator import build_flat_file_package_tree
+
+        root = build_flat_file_package_tree(spec, project_context, template_path)
+    else:
+        # Formato legacy (destino 'ole_db'): un unico Data Flow implicito.
+        # Sin cambios.
+        root = build_package_tree(spec, project_context, template_path)
+
     ET.indent(root, space="  ")
     ET.ElementTree(root).write(output_path, encoding="utf-8", xml_declaration=True)

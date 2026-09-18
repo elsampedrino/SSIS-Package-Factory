@@ -1,0 +1,41 @@
+{
+  "package": {
+    "name": "TeradataToFlatFileV1_E2E"
+  },
+  "data_flow": {
+    "name": "Tarea Flujo de datos",
+    "source": {
+      "type": "teradata",
+      "name": "Teradata Source",
+      "connection": "cnxTeradata",
+      "sql": "SELECT\n    Fec_Proceso_PIC,\n    Id_d_Cliente_PIC,\n    Nom_Cliente_PIC\nFROM D_TERADATA_TO_FLAT_FILE_V1_E2E",
+      "columns": [
+        {"name": "Fec_Proceso_PIC", "data_type": "str", "length": 8, "code_page": 1252},
+        {"name": "Id_d_Cliente_PIC", "data_type": "str", "length": 20, "code_page": 1252},
+        {"name": "Nom_Cliente_PIC", "data_type": "str", "length": 50, "code_page": 1252}
+      ]
+    },
+    "destination": {
+      "type": "flat_file",
+      "name": "Destino de archivo plano",
+      "connection_manager": {
+        "name": "ffcTeradataToFlatFileV1E2E",
+        "format": "ragged_right",
+        "code_page": 1252,
+        "locale_id": 11274,
+        "unicode": false,
+        "header_row_delimiter": "CRLF",
+        "text_qualifier": "none",
+        "filename": {
+          "literal": "C:\\SSISPackageFactory_Test\\TeradataToFlatFileV1_E2E.txt"
+        }
+      },
+      "columns": [
+        {"source": "Fec_Proceso_PIC", "target": "Fec_Proceso_PIC", "target_data_type": "str", "target_length": 8, "target_code_page": 1252},
+        {"source": "Id_d_Cliente_PIC", "target": "Id_d_Cliente_PIC", "target_data_type": "str", "target_length": 20, "target_code_page": 1252},
+        {"source": "Nom_Cliente_PIC", "target": "Nom_Cliente_PIC", "target_data_type": "str", "target_length": 50, "target_code_page": 1252},
+        {"target": "EndLine", "row_terminator": true}
+      ]
+    }
+  }
+}
