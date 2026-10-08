@@ -20,6 +20,7 @@ MediosDePago escriben a directorios temporales, nunca al repo.
 """
 
 import copy
+import datetime
 import json
 import os
 import shutil
@@ -36,6 +37,7 @@ from generator.campanias_generator import generate
 from generator.flat_file_generator import (
     _build_filename_expression,
     _escape_ssis_expression_string_literal,
+    _resolve_static_connection_string,
 )
 from generator.spec_validator import SpecValidationError, validate_spec
 from project_context.context_builder import build_project_context
@@ -399,6 +401,327 @@ class FilenameExpressionEscapingTests(unittest.TestCase):
             )
         finally:
             shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+# flat-file-dynamic-filename-v1 -- 'filename.parts' (nuevo, dual-path con el
+# formato legacy de arriba). Ver docs/template_teradata_to_flat_file_v1.md,
+# "Filename dinamico". Evidencia real: Examples/Originals/CRM/InProTarjetaCrm.dtsx.
+# ---------------------------------------------------------------------------
+class DynamicFilenameValidatorTests(unittest.TestCase):
+    def test_parts_empty_list_rejected(self):
+        spec = _base_spec()
+        spec["data_flow"]["destination"]["connection_manager"]["filename"] = {"parts": []}
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("no puede ser una lista vacia" in e for e in errors))
+
+    def test_parts_not_a_list_rejected(self):
+        spec = _base_spec()
+        spec["data_flow"]["destination"]["connection_manager"]["filename"] = {"parts": "oops"}
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("debe ser una lista" in e for e in errors))
+
+    def test_part_not_object_rejected(self):
+        spec = _base_spec()
+        spec["data_flow"]["destination"]["connection_manager"]["filename"] = {
+            "parts": ["not-an-object"]
+        }
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("debe ser un objeto" in e for e in errors))
+
+    def test_part_missing_type_rejected(self):
+        spec = _base_spec()
+        spec["data_flow"]["destination"]["connection_manager"]["filename"] = {
+            "parts": [{"value": "x"}]
+        }
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any(".type debe ser uno de" in e for e in errors))
+
+    def test_part_unknown_type_rejected(self):
+        # 'raw_expression' (o cualquier otro valor no estructurado) se
+        # rechaza explicitamente -- el ProcessSpec nunca acepta una
+        # expresion SSIS cruda.
+        spec = _base_spec()
+        spec["data_flow"]["destination"]["connection_manager"]["filename"] = {
+            "parts": [{"type": "raw_expression", "value": "GETDATE()"}]
+        }
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any(".type debe ser uno de" in e for e in errors))
+
+    def test_mixing_parts_with_legacy_keys_rejected(self):
+        spec = _base_spec()
+        spec["data_flow"]["destination"]["connection_manager"]["filename"] = {
+            "parameter": "pathLocal",
+            "parts": [{"type": "literal", "value": "x.txt"}],
+        }
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("mutuamente excluyentes" in e for e in errors))
+
+    def test_parts_parameter_not_in_project_context_rejected(self):
+        spec = _base_spec()
+        spec["data_flow"]["destination"]["connection_manager"]["filename"] = {
+            "parts": [{"type": "parameter", "name": "noExiste"}]
+        }
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("no existe entre los parameters" in e for e in errors))
+
+    def test_parts_literal_empty_rejected(self):
+        spec = _base_spec()
+        spec["data_flow"]["destination"]["connection_manager"]["filename"] = {
+            "parts": [{"type": "literal", "value": ""}]
+        }
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any(".value es obligatorio" in e for e in errors))
+
+    def test_parts_variable_missing_value_rejected(self):
+        spec = _base_spec()
+        spec["data_flow"]["destination"]["connection_manager"]["filename"] = {
+            "parts": [{"type": "variable", "name": "x"}]
+        }
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any(".value es obligatorio" in e for e in errors))
+
+    def test_parts_more_than_one_variable_rejected(self):
+        spec = _base_spec()
+        spec["data_flow"]["destination"]["connection_manager"]["filename"] = {
+            "parts": [
+                {"type": "variable", "name": "a", "value": "1"},
+                {"type": "variable", "name": "b", "value": "2"},
+            ]
+        }
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("a lo sumo 1" in e for e in errors))
+
+    def test_current_date_missing_format_rejected(self):
+        spec = _base_spec()
+        spec["data_flow"]["destination"]["connection_manager"]["filename"] = {
+            "parts": [{"type": "current_date"}]
+        }
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any(".format es obligatorio" in e for e in errors))
+
+    def test_current_date_unsupported_format_yyyyMM_rejected(self):
+        spec = _base_spec()
+        spec["data_flow"]["destination"]["connection_manager"]["filename"] = {
+            "parts": [{"type": "current_date", "format": "yyyyMM"}]
+        }
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any(".format debe ser uno de" in e for e in errors))
+
+    def test_current_date_other_unsupported_formats_rejected(self):
+        # yyyy/timestamp/horas/offsets/formatos arbitrarios -- ninguno tiene
+        # evidencia real en v1 (ver SUPPORTED_CURRENT_DATE_FORMATS).
+        spec = _base_spec()
+        for bad_format in ("yyyy", "timestamp", "HHmmss", "ddMMyyyy", "yesterday"):
+            spec["data_flow"]["destination"]["connection_manager"]["filename"] = {
+                "parts": [{"type": "current_date", "format": bad_format}]
+            }
+            errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+            self.assertTrue(
+                any(".format debe ser uno de" in e for e in errors),
+                f"formato {bad_format!r} deberia haber sido rechazado",
+            )
+
+    def test_valid_parts_combination_has_no_errors(self):
+        spec = _base_spec()
+        spec["data_flow"]["destination"]["connection_manager"]["filename"] = {
+            "parts": [
+                {"type": "parameter", "name": "pathLocal"},
+                {"type": "literal", "value": "MediosDePago\\archivo_"},
+                {"type": "current_date", "format": "yyyyMMdd"},
+                {"type": "literal", "value": ".txt"},
+            ]
+        }
+        self.assertEqual(validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT), [])
+
+
+class DynamicFilenameExpressionTests(unittest.TestCase):
+    def test_parts_parameter_literal_current_date_literal_produces_canonical_expression(self):
+        # Expresion CANONICA extraida de evidencia real (ver
+        # Examples/Originals/CRM/InProTarjetaCrm.dtsx, Flat File CM
+        # 'ffcArchivoCRM') -- los 3 casts (anio/mes/dia) usan
+        # '(DT_STR,4,1252)', nunca length 2 para mes/dia.
+        expr = _build_filename_expression(
+            {
+                "parts": [
+                    {"type": "parameter", "name": "pathTraspaso"},
+                    {"type": "literal", "value": "CRM\\CRM_DW_PROMOCIONES_"},
+                    {"type": "current_date", "format": "yyyyMMdd"},
+                    {"type": "literal", "value": ".txt"},
+                ]
+            }
+        )
+        self.assertEqual(
+            expr,
+            '@[$Project::pathTraspaso] + "CRM\\\\CRM_DW_PROMOCIONES_" + '
+            '(DT_STR,4,1252)DATEPART("yyyy",getdate()) + '
+            'RIGHT("0" + (DT_STR,4,1252)DATEPART("mm",getdate()), 2) + '
+            'RIGHT("0" + (DT_STR,4,1252)DATEPART("dd",getdate()), 2) + ".txt"',
+        )
+
+    def test_parts_order_is_preserved_not_reordered_by_type(self):
+        expr_a = _build_filename_expression(
+            {"parts": [{"type": "literal", "value": "A"}, {"type": "literal", "value": "B"}]}
+        )
+        expr_b = _build_filename_expression(
+            {"parts": [{"type": "literal", "value": "B"}, {"type": "literal", "value": "A"}]}
+        )
+        self.assertEqual(expr_a, '"A" + "B"')
+        self.assertEqual(expr_b, '"B" + "A"')
+        self.assertNotEqual(expr_a, expr_b)
+
+    def test_two_literals_separated_by_current_date_stay_distinct_fragments(self):
+        expr = _build_filename_expression(
+            {
+                "parts": [
+                    {"type": "literal", "value": "prefix_"},
+                    {"type": "current_date", "format": "yyyyMMdd"},
+                    {"type": "literal", "value": "_suffix"},
+                ]
+            }
+        )
+        self.assertTrue(expr.startswith('"prefix_" + '))
+        self.assertTrue(expr.endswith(' + "_suffix"'))
+        self.assertEqual(expr.count('"prefix_"'), 1)
+        self.assertEqual(expr.count('"_suffix"'), 1)
+
+    def test_parts_literal_backslash_uses_existing_c_style_escaping(self):
+        expr = _build_filename_expression(
+            {"parts": [{"type": "literal", "value": r"CRM\archivo.txt"}]}
+        )
+        self.assertEqual(expr, r'"CRM\\archivo.txt"')
+
+    def test_parts_literal_quote_uses_existing_escaping(self):
+        expr = _build_filename_expression(
+            {"parts": [{"type": "literal", "value": 'archivo "raro".txt'}]}
+        )
+        self.assertEqual(expr, '"archivo \\"raro\\".txt"')
+
+    def test_raw_expression_part_type_rejected_end_to_end_via_validate_spec(self):
+        # El generator nunca llega a ver un 'raw_expression' en uso real
+        # porque spec_validator lo bloquea antes (fail-fast) -- confirmado
+        # end-to-end via validate_spec, no solo a nivel unitario.
+        spec = _base_spec()
+        spec["data_flow"]["destination"]["connection_manager"]["filename"] = {
+            "parts": [{"type": "raw_expression", "value": "GETDATE()"}]
+        }
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(len(errors) > 0)
+
+
+class DynamicFilenameStaticConnectionStringTests(unittest.TestCase):
+    def test_current_date_resolves_to_injected_date(self):
+        # 'now' inyectable -- determinista, no depende del reloj real (ver
+        # generator/flat_file_generator.py, _resolve_static_connection_string).
+        filename_spec = {
+            "parts": [
+                {"type": "parameter", "name": "pathTraspaso"},
+                {"type": "literal", "value": "CRM\\CRM_DW_PROMOCIONES_"},
+                {"type": "current_date", "format": "yyyyMMdd"},
+                {"type": "literal", "value": ".txt"},
+            ]
+        }
+        project_context = {
+            "parameters": [
+                {"name": "pathTraspaso", "value": r"\\srv\share\Traspaso\\", "sensitive": False}
+            ]
+        }
+        resolved = _resolve_static_connection_string(
+            filename_spec, project_context, now=datetime.date(2026, 10, 7)
+        )
+        self.assertTrue(resolved.endswith("CRM_DW_PROMOCIONES_20261007.txt"))
+
+    def test_static_connection_string_without_injected_date_uses_real_today(self):
+        # Sin 'now' explicito, debe usar la fecha real de HOY -- confirma
+        # que NO queda ningun placeholder simbolico tipo 'YYYYMMDD' (la
+        # evidencia real muestra una fecha concreta, ver
+        # Examples/Originals/CRM/InProTarjetaCrm.dtsx).
+        filename_spec = {"parts": [{"type": "current_date", "format": "yyyyMMdd"}]}
+        resolved = _resolve_static_connection_string(filename_spec, {"parameters": []})
+        self.assertEqual(resolved, datetime.date.today().strftime("%Y%m%d"))
+        self.assertNotIn("YYYYMMDD", resolved)
+
+    def test_property_expression_keeps_getdate_not_generation_date(self):
+        filename_spec = {
+            "parts": [
+                {"type": "literal", "value": "CRM_DW_PROMOCIONES_"},
+                {"type": "current_date", "format": "yyyyMMdd"},
+                {"type": "literal", "value": ".txt"},
+            ]
+        }
+        expr = _build_filename_expression(filename_spec)
+        injected_date_str = datetime.date(2026, 10, 7).strftime("%Y%m%d")
+        self.assertIn("getdate()", expr)
+        self.assertNotIn(injected_date_str, expr)
+
+
+class DynamicFilenameE2ETests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.spec = _base_spec()
+        cls.spec["data_flow"]["destination"]["connection_manager"]["filename"] = {
+            "parts": [
+                {"type": "parameter", "name": "pathLocal"},
+                {"type": "literal", "value": "MediosDePago\\archivo_"},
+                {"type": "current_date", "format": "yyyyMMdd"},
+                {"type": "literal", "value": ".txt"},
+            ]
+        }
+        cls.tmp_dir = tempfile.mkdtemp(prefix="ssis_flat_file_dynamic_filename_test_")
+        cls.output_path = os.path.join(cls.tmp_dir, "Generated.dtsx")
+        generate(cls.spec, MEDIOS_DE_PAGO_CONTEXT, TEMPLATE_PATH, cls.output_path)
+        cls.ir = ssis_parser.parse_file(cls.output_path)
+        cls.validation = ssis_validator.validate_ir(cls.ir)
+        cls.data_flow = cls.ir["data_flows"][0]
+        cls.tree = ET.parse(cls.output_path)
+        cls.root = cls.tree.getroot()
+        cls.NS = {"DTS": "www.microsoft.com/SqlServer/Dts"}
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.tmp_dir, ignore_errors=True)
+
+    def _flat_file_cm(self):
+        return next(
+            cm for cm in self.root.findall("DTS:ConnectionManagers/DTS:ConnectionManager", self.NS)
+            if cm.get("{www.microsoft.com/SqlServer/Dts}CreationName") == "FLATFILE"
+        )
+
+    def test_parser_result_is_valid(self):
+        self.assertIsInstance(self.ir, dict)
+
+    def test_validator_has_no_errors(self):
+        self.assertEqual(self.validation["errors"], [])
+        self.assertTrue(self.validation["valid"])
+
+    def test_property_expression_contains_canonical_current_date_expression(self):
+        cm = self._flat_file_cm()
+        prop_expr = cm.find("DTS:PropertyExpression", self.NS)
+        self.assertEqual(
+            prop_expr.text,
+            '@[$Project::pathLocal] + "MediosDePago\\\\archivo_" + '
+            '(DT_STR,4,1252)DATEPART("yyyy",getdate()) + '
+            'RIGHT("0" + (DT_STR,4,1252)DATEPART("mm",getdate()), 2) + '
+            'RIGHT("0" + (DT_STR,4,1252)DATEPART("dd",getdate()), 2) + ".txt"',
+        )
+
+    def test_cached_connection_string_contains_concrete_date(self):
+        cm = self._flat_file_cm()
+        inner_cm = cm.find("DTS:ObjectData/DTS:ConnectionManager", self.NS)
+        cached = inner_cm.get("{www.microsoft.com/SqlServer/Dts}ConnectionString")
+        today_suffix = datetime.date.today().strftime("%Y%m%d")
+        self.assertIn(today_suffix, cached)
+
+    def test_flat_file_cm_format_locale_codepage_preserved(self):
+        cm = self._flat_file_cm()
+        inner_cm = cm.find("DTS:ObjectData/DTS:ConnectionManager", self.NS)
+        self.assertEqual(inner_cm.get("{www.microsoft.com/SqlServer/Dts}Format"), "RaggedRight")
+        self.assertEqual(inner_cm.get("{www.microsoft.com/SqlServer/Dts}LocaleID"), "11274")
+        self.assertEqual(inner_cm.get("{www.microsoft.com/SqlServer/Dts}CodePage"), "1252")
+
+    def test_data_flow_topology_unchanged(self):
+        class_ids = {c["class_id"] for c in self.data_flow["components"]}
+        self.assertEqual(class_ids, {"Microsoft.SSISTeradataSrc", "Microsoft.FlatFileDestination"})
 
 
 # ---------------------------------------------------------------------------

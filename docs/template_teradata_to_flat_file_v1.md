@@ -363,6 +363,93 @@ campo `unicode` explícito en el spec, pero **solo acepta `false`** —
 (`GO CON RESTRICCIONES` documentado como no implementado, no como
 imposible).
 
+## Filename dinámico (`flat-file-dynamic-filename-v1`)
+
+**STATUS: IMPLEMENTED / PENDING SSDT GATE.** Incremento aditivo sobre
+`template-teradata-to-flat-file-v1` (que permanece `STABLE / SSDT
+VALIDATED` para todas sus capacidades previas). Agrega un **segundo
+formato** para `destination.connection_manager.filename`, mutuamente
+excluyente con el formato legacy de arriba (`parameter`/`literal`/
+`variable` sueltos) — nunca ambos en el mismo objeto `filename`.
+
+### Formato legacy (sin cambios)
+
+```json
+"filename": {
+  "parameter": "pathLocal",
+  "literal": "MediosDePago\\...",
+  "variable": {"name": "nombreArchivo", "value": "archivo.txt"}
+}
+```
+Comportamiento, mensajes de error y orden de concatenación (`parameter + literal + variable`, fijo por código) **idénticos** a los ya validados en SSDT — cero cambios de semántica.
+
+### Formato nuevo: `filename.parts[]`
+
+```json
+"filename": {
+  "parts": [
+    {"type": "parameter", "name": "pathTraspaso"},
+    {"type": "literal", "value": "CRM\\CRM_DW_PROMOCIONES_"},
+    {"type": "current_date", "format": "yyyyMMdd"},
+    {"type": "literal", "value": ".txt"}
+  ]
+}
+```
+
+El **orden del array define el orden de concatenación** — el generador
+nunca reordena ni reagrupa por tipo. Necesario porque el formato legacy
+(un solo campo `literal`) no puede representar `literal + dinámico +
+literal` (prefijo y sufijo alrededor de una fecha).
+
+Tipos soportados en v1 (`SUPPORTED_FILENAME_PART_TYPES`):
+- `parameter`: `{"name": "<project parameter>"}` → `@[$Project::<name>]`.
+- `literal`: `{"value": "<texto>"}` → pasa por el mismo
+  `_escape_ssis_expression_string_literal` ya usado por el formato legacy
+  (escaping C-style, sin segunda implementación).
+- `variable`: `{"name": "...", "value": "..."}` → `@[User::<name>]` +
+  registra el mismo `<DTS:Variable>` de valor literal que hoy (**nunca**
+  `DTS:EvaluateAsExpression`). **Máximo 1** `variable` en `parts[]` — misma
+  cardinalidad que el formato legacy.
+- `current_date`: `{"format": "yyyyMMdd"}` — única capacidad nueva.
+
+No se acepta ningún otro `type` (ej. `raw_expression`) ni una expresión
+SSIS cruda — el ProcessSpec nunca escribe SSIS Expression Language
+directamente, solo intención estructurada.
+
+### `current_date` — único formato v1: `yyyyMMdd`
+
+Traducción **canónica**, extraída EXACTA de evidencia productiva real
+(`Examples/Originals/CRM/InProTarjetaCrm.dtsx`, Flat File CM
+`ffcArchivoCRM`, `PropertyExpression` de `ConnectionString`):
+
+```
+(DT_STR,4,1252)DATEPART("yyyy",getdate()) + RIGHT("0" + (DT_STR,4,1252)DATEPART("mm",getdate()), 2) + RIGHT("0" + (DT_STR,4,1252)DATEPART("dd",getdate()), 2)
+```
+
+Los 3 casts (año/mes/día) usan `(DT_STR,4,1252)` — **nunca length 2 para
+mes/día** (una duda real durante la auditoría, resuelta contra el XML real:
+la evidencia usa 4 uniformemente). `getdate()` en runtime real de SSIS —
+la fecha se calcula en el **momento de ejecución del paquete**, nunca en
+el momento de generación de Factory. `"yyyy"`/`"mm"`/`"dd"`/`"0"` son
+literales propios del generador (sintaxis SSIS fija), no pasan por el
+escaping de literales de usuario. Ningún otro formato (`yyyyMM`, `yyyy`,
+timestamps, horas, offsets, `yesterday`/`tomorrow`) tiene evidencia real —
+se rechazan explícitamente (`SUPPORTED_CURRENT_DATE_FORMATS = {"yyyyMMdd"}`).
+
+### `DTS:ConnectionString` cacheada — fecha real de generación, no placeholder
+
+Evidencia real: `DTS:ConnectionString="...CRM_DW_IN_PRO_TARJETA_20261005.txt"`
+— SSDT deja ahí una fecha **concreta** (la que tenía `getdate()` la última
+vez que el paquete se guardó), no un token simbólico. Por eso, para un
+fragmento `current_date`, Factory resuelve este valor cosmético con la
+**fecha real del momento de generación** (`datetime.date.today()`,
+formateada `%Y%m%d`) — nunca un placeholder como `"YYYYMMDD"`. Es
+puramente informativo para el diseñador; la `PropertyExpression` real
+sigue usando `getdate()` siempre, sin excepción. Para testabilidad
+determinista, `_resolve_static_connection_string` acepta un parámetro
+`now` inyectable (default `None` → fecha real) — los tests nunca dependen
+del reloj.
+
 ## Schema de columnas — Ragged Right
 
 Dos convenciones reales confirmadas para representar el terminador de fila

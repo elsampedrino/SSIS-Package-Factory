@@ -37,8 +37,9 @@ es un package real productivo sin ninguno de estos).
 
 from __future__ import annotations
 
+import datetime
 import xml.etree.ElementTree as ET
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from .campanias_generator import (
     TERADATA_SOURCE_CLASS_ID,
@@ -129,6 +130,36 @@ _FLAT_FILE_COLUMN_DATA_TYPE_CODES = {
 # docs/template_teradata_to_flat_file_v1.md, "Filename/ConnectionString").
 _STRING_VARIABLE_DATA_TYPE_CODE = "8"
 
+# flat-file-dynamic-filename-v1: traduccion CANONICA de un fragmento
+# 'current_date' a SSIS Expression Language. Extraida EXACTA de evidencia
+# real (Examples/Originals/CRM/InProTarjetaCrm.dtsx, Flat File CM
+# 'ffcArchivoCRM', PropertyExpression de ConnectionString) -- los 3 casts
+# (anio/mes/dia) usan '(DT_STR,4,1252)', NUNCA length 2 para mes/dia (una
+# duda real durante la auditoria, resuelta contra el XML real: la evidencia
+# usa 4 en los 3 casts, no 2). Espacios cosmeticos del XML real omitidos
+# (no son semanticos en SSIS Expression Language). 'yyyy'/'mm'/'dd'/'0' son
+# literales PROPIOS del generador (nunca pasan por
+# _escape_ssis_expression_string_literal: no son input del usuario, son
+# sintaxis SSIS fija). Unico formato soportado en v1 -- ver
+# spec_validator.SUPPORTED_CURRENT_DATE_FORMATS.
+_CURRENT_DATE_EXPRESSIONS = {
+    "yyyyMMdd": (
+        '(DT_STR,4,1252)DATEPART("yyyy",getdate())'
+        ' + RIGHT("0" + (DT_STR,4,1252)DATEPART("mm",getdate()), 2)'
+        ' + RIGHT("0" + (DT_STR,4,1252)DATEPART("dd",getdate()), 2)'
+    ),
+}
+
+# Formato strftime equivalente, usado SOLO para el valor cosmetico/cacheado
+# de DTS:ConnectionString (ver _resolve_static_connection_string) -- la
+# evidencia real confirma que SSDT deja ahi una fecha CONCRETA (la del
+# momento en que se guardo el paquete, ej. "...20261005.txt"), no un
+# placeholder simbolico. La PropertyExpression real sigue usando 'getdate()'
+# en runtime -- este valor es puramente informativo para el diseñador.
+_CURRENT_DATE_STRFTIME_FORMATS = {
+    "yyyyMMdd": "%Y%m%d",
+}
+
 
 def _package_connection_manager_ref(name: str) -> str:
     """'Package.ConnectionManagers[<name>]' -- misma formula que
@@ -169,18 +200,48 @@ def _escape_ssis_expression_string_literal(value: str) -> str:
 
 def _build_filename_expression(filename_spec: Dict[str, Any]) -> str:
     """
-    Construye la expresion SSIS de ConnectionString a partir de las 3 partes
-    estructuradas soportadas (parameter/literal/variable), concatenadas con
-    '+' en ese orden -- unico orden evidenciado en el corpus real (ver
-    docs/template_teradata_to_flat_file_v1.md, "Filename/ConnectionString").
-    No es un lenguaje generico de expresiones: solo estas 3 formas.
+    Construye la expresion SSIS de ConnectionString. Dos formatos
+    mutuamente excluyentes (ver spec_validator.py, nunca ambos en el mismo
+    'filename' -- ya rechazado en validacion):
 
-    IMPORTANTE: solo 'literal' pasa por _escape_ssis_expression_string_literal
-    (es el UNICO fragmento que se serializa como string literal). Las
-    referencias '@[$Project::...]'/'@[User::...]' son sintaxis de
-    referencia de SSIS, NUNCA se tratan como string literal ni se escapan
-    -- ver docs/template_teradata_to_flat_file_v1.md, "Filename/ConnectionString".
+    - legacy (SIN CAMBIOS de comportamiento): hasta 3 partes sueltas
+      (parameter/literal/variable), concatenadas con '+' en ESE orden fijo
+      -- unico orden evidenciado en el corpus historico (ver
+      docs/template_teradata_to_flat_file_v1.md, "Filename/ConnectionString").
+    - flat-file-dynamic-filename-v1 ('filename.parts', lista ordenada): el
+      orden del array ES el orden de concatenacion -- nunca se reordena ni
+      se reagrupa por tipo (necesario para representar literal + dinamico +
+      literal, ej. "CRM_DW_PROMOCIONES_" + fecha + ".txt", que el formato
+      legacy de 3 claves sueltas no puede expresar al tener un solo campo
+      'literal'). Agrega 'current_date' (ver _CURRENT_DATE_EXPRESSIONS,
+      traduccion exacta extraida de evidencia real).
+
+    IMPORTANTE (ambos formatos): solo 'literal'/'literal.value' pasa por
+    _escape_ssis_expression_string_literal (es el UNICO fragmento que se
+    serializa como string literal). Las referencias '@[$Project::...]'/
+    '@[User::...]' son sintaxis de referencia de SSIS, NUNCA se tratan como
+    string literal ni se escapan. Los literales internos de
+    'current_date' ('yyyy'/'mm'/'dd'/'0') son sintaxis SSIS fija del
+    generador, no input del usuario -- tampoco pasan por ese escaping.
+    No es un lenguaje generico de expresiones: solo estos 4 tipos de
+    fragmento, nunca una expresion SSIS cruda.
     """
+    parts_spec = filename_spec.get("parts")
+    if parts_spec is not None:
+        fragments: List[str] = []
+        for part in parts_spec:
+            part_type = part["type"]
+            if part_type == "parameter":
+                fragments.append(f"@[$Project::{part['name']}]")
+            elif part_type == "literal":
+                fragments.append(f'"{_escape_ssis_expression_string_literal(part["value"])}"')
+            elif part_type == "variable":
+                fragments.append(f"@[User::{part['name']}]")
+            elif part_type == "current_date":
+                fragments.append(_CURRENT_DATE_EXPRESSIONS[part["format"]])
+        return " + ".join(fragments)
+
+    # --- legacy: sin cambios de comportamiento ---
     parts: List[str] = []
     parameter = filename_spec.get("parameter")
     if parameter is not None:
@@ -195,7 +256,9 @@ def _build_filename_expression(filename_spec: Dict[str, Any]) -> str:
 
 
 def _resolve_static_connection_string(
-    filename_spec: Dict[str, Any], project_context: Dict[str, Any]
+    filename_spec: Dict[str, Any],
+    project_context: Dict[str, Any],
+    now: Optional[datetime.date] = None,
 ) -> str:
     """
     Valor 'cacheado' de ConnectionString (atributo DTS:ConnectionString del
@@ -204,9 +267,45 @@ def _resolve_static_connection_string(
     coexisten). Es puramente cosmetico/informativo para SSDT: se resuelve
     con la mejor informacion disponible (valor real del project parameter si
     esta en ProjectContext y no es sensible; valor literal declarado en el
-    spec; valor de la variable, que el propio spec declara) sin necesidad de
-    que sea exacto -- SSIS lo recalcula solo con el PropertyExpression.
+    spec; valor de la variable, que el propio spec declara; para
+    'current_date', la fecha REAL del momento de generacion -- ver
+    'now' abajo) sin necesidad de que sea exacto -- SSIS lo recalcula solo
+    con el PropertyExpression.
+
+    'now': fecha inyectable para resolver 'current_date' de forma
+    deterministica/testeable (ver tests/test_flat_file_generator.py) --
+    default None usa datetime.date.today() en la generacion real. NO
+    confundir con la PropertyExpression real, que siempre usa 'getdate()'
+    de SSIS en runtime -- este parametro solo afecta el valor cosmetico
+    cacheado. Confirmado por evidencia real
+    (Examples/Originals/CRM/InProTarjetaCrm.dtsx): el
+    DTS:ConnectionString cacheado del Flat File CM productivo contiene una
+    fecha CONCRETA (la del momento en que SSDT guardo el paquete, ej.
+    "...20261005.txt"), no un placeholder simbolico -- por eso aca se usa
+    la fecha real de generacion y no un token como "YYYYMMDD".
     """
+    if now is None:
+        now = datetime.date.today()
+
+    parts_spec = filename_spec.get("parts")
+    if parts_spec is not None:
+        parameters = {p["name"]: p for p in project_context.get("parameters", [])}
+        fragments: List[str] = []
+        for part in parts_spec:
+            part_type = part["type"]
+            if part_type == "parameter":
+                param_meta = parameters.get(part["name"])
+                value = param_meta.get("value") if param_meta else None
+                fragments.append(value if value is not None else f"<{part['name']}>")
+            elif part_type == "literal":
+                fragments.append(part["value"])
+            elif part_type == "variable":
+                fragments.append(str(part.get("value", "")))
+            elif part_type == "current_date":
+                fragments.append(now.strftime(_CURRENT_DATE_STRFTIME_FORMATS[part["format"]]))
+        return "".join(fragments)
+
+    # --- legacy: sin cambios de comportamiento ---
     parameters = {p["name"]: p for p in project_context.get("parameters", [])}
     fragments: List[str] = []
     parameter = filename_spec.get("parameter")
@@ -242,6 +341,22 @@ def _build_string_variable(name: str, value: str) -> ET.Element:
     value_el.set(dts("DataType"), _STRING_VARIABLE_DATA_TYPE_CODE)
     value_el.text = value
     return var_el
+
+
+def _find_filename_variable(filename_spec: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """
+    Devuelve el (unico) fragmento 'variable' de 'filename', sea formato
+    legacy ('filename.variable') o 'filename.parts' (el elemento con
+    type='variable' -- a lo sumo 1, ya garantizado por
+    spec_validator._validate_filename_parts). None si no hay ninguno.
+    """
+    parts_spec = filename_spec.get("parts")
+    if parts_spec is not None:
+        for part in parts_spec:
+            if part.get("type") == "variable":
+                return part
+        return None
+    return filename_spec.get("variable")
 
 
 def _build_flat_file_connection_manager(
@@ -494,7 +609,7 @@ def build_flat_file_package_tree(
     # --- Variable de package para el filename (opcional, ver evidencia) ---
     variables_el = root.find(dts("Variables"))
     _clear_children(variables_el, dts("Variable"))
-    filename_variable = cm_spec["filename"].get("variable")
+    filename_variable = _find_filename_variable(cm_spec["filename"])
     if filename_variable is not None:
         variables_el.append(
             _build_string_variable(filename_variable["name"], filename_variable["value"])

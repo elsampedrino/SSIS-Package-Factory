@@ -66,6 +66,23 @@ SUPPORTED_TEXT_QUALIFIERS = {"none"}
 # Conversion -- ver docs/template_teradata_to_flat_file_v1.md, "str -> wstr").
 SUPPORTED_FLAT_FILE_COLUMN_DATA_TYPES = {"str", "wstr"}
 
+# flat-file-dynamic-filename-v1: segunda forma de 'filename', ademas de la
+# legacy ('parameter'/'literal'/'variable' sueltos, orden fijo por codigo) --
+# ver docs/template_teradata_to_flat_file_v1.md, "Filename dinamico". Formato
+# nuevo: 'filename.parts' (lista ordenada, orden = orden de concatenacion),
+# mutuamente excluyente con la forma legacy (nunca ambas en el mismo objeto
+# 'filename' -- deteccion estructural por presencia de la clave 'parts',
+# mismo criterio ya usado para 'destination.type' y para el formato
+# control-flow-v1/'executables').
+SUPPORTED_FILENAME_PART_TYPES = {"parameter", "literal", "variable", "current_date"}
+
+# Evidencia real (Examples/Originals/CRM/InProTarjetaCrm.dtsx, Flat File CM
+# 'ffcArchivoCRM'): unico formato de fecha dinamica confirmado en el corpus
+# es AAAAMMDD via DATEPART("yyyy"/"mm"/"dd", getdate()). Sin evidencia de
+# ningun otro formato (yyyyMM, timestamps, horas) -- no se amplia sin
+# evidencia adicional.
+SUPPORTED_CURRENT_DATE_FORMATS = {"yyyyMMdd"}
+
 # derived-column-v1: segundo tipo de transformacion soportado, ademas de
 # 'data_conversion' -- ver docs/derived_column_v1.md. A lo sumo UN elemento
 # de CADA tipo por Data Flow (nunca 2 del mismo tipo); si ambos coexisten,
@@ -184,6 +201,92 @@ def _validate_optional_teradata_source_sessions(
     return errors
 
 
+def _validate_filename_parts(
+    parts: Any, parameter_names: set, label: str
+) -> List[str]:
+    """
+    flat-file-dynamic-filename-v1: valida 'filename.parts' (lista ordenada,
+    el orden del array ES el orden de concatenacion -- nunca se reordena ni
+    se reagrupa por tipo). Cada elemento es un fragmento estructurado con
+    'type' en SUPPORTED_FILENAME_PART_TYPES; cualquier otro valor de 'type'
+    (incluido algo como 'raw_expression') se rechaza explicitamente -- el
+    ProcessSpec nunca acepta una expresion SSIS cruda, ver
+    docs/template_teradata_to_flat_file_v1.md, "Filename dinamico".
+
+    'current_date' es la unica capacidad nueva de v1 -- unico formato
+    soportado 'yyyyMMdd' (ver SUPPORTED_CURRENT_DATE_FORMATS, evidencia real
+    en Examples/Originals/CRM/InProTarjetaCrm.dtsx). 'parameter'/'literal'/
+    'variable' dentro de 'parts' usan las mismas reglas que el formato
+    legacy (mismo criterio de validacion, solo que ahora dentro de una lista
+    ordenada en vez de 3 claves sueltas).
+    """
+    errors: List[str] = []
+    prefix = f"{label}.destination.connection_manager.filename.parts"
+
+    if not isinstance(parts, list):
+        errors.append(f"'{prefix}' debe ser una lista.")
+        return errors
+    if len(parts) == 0:
+        errors.append(f"'{prefix}' no puede ser una lista vacia.")
+        return errors
+
+    variable_count = 0
+    for idx, part in enumerate(parts):
+        p_label = f"{prefix}[{idx}]"
+        if not isinstance(part, dict):
+            errors.append(f"{p_label} debe ser un objeto.")
+            continue
+
+        part_type = part.get("type")
+        if part_type not in SUPPORTED_FILENAME_PART_TYPES:
+            errors.append(
+                f"{p_label}.type debe ser uno de "
+                f"{sorted(SUPPORTED_FILENAME_PART_TYPES)} -- no se acepta una "
+                f"expresion SSIS cruda ni un tipo no estructurado; "
+                f"vino: {part_type!r}."
+            )
+            continue
+
+        if part_type == "parameter":
+            name = part.get("name")
+            if not _non_empty_str(name):
+                errors.append(f"{p_label}.name es obligatorio y no puede estar vacio.")
+            elif name not in parameter_names:
+                errors.append(
+                    f"{p_label}.name = '{name}' no existe entre los parameters "
+                    f"del proyecto (ProjectContext): {sorted(n for n in parameter_names if n)}."
+                )
+        elif part_type == "literal":
+            if not _non_empty_str(part.get("value")):
+                errors.append(f"{p_label}.value es obligatorio y no puede estar vacio.")
+        elif part_type == "variable":
+            variable_count += 1
+            if not _non_empty_str(part.get("name")):
+                errors.append(f"{p_label}.name es obligatorio y no puede estar vacio.")
+            if not _non_empty_str(part.get("value")):
+                errors.append(f"{p_label}.value es obligatorio y no puede estar vacio.")
+        elif part_type == "current_date":
+            date_format = part.get("format")
+            if date_format is None:
+                errors.append(f"{p_label}.format es obligatorio.")
+            elif date_format not in SUPPORTED_CURRENT_DATE_FORMATS:
+                errors.append(
+                    f"{p_label}.format debe ser uno de "
+                    f"{sorted(SUPPORTED_CURRENT_DATE_FORMATS)} (unico formato con "
+                    "evidencia real en v1); vino: "
+                    f"{date_format!r}."
+                )
+
+    if variable_count > 1:
+        errors.append(
+            f"'{prefix}' tiene {variable_count} elementos de type='variable' -- "
+            "a lo sumo 1 esta soportado en v1 (misma cardinalidad que el "
+            "formato legacy)."
+        )
+
+    return errors
+
+
 def _validate_flat_file_destination(
     destination: Dict[str, Any],
     pipeline_columns: set,
@@ -261,6 +364,23 @@ def _validate_flat_file_destination(
         if not isinstance(filename, dict):
             errors.append(
                 f"Falta '{label}.destination.connection_manager.filename' (objeto)."
+            )
+        elif "parts" in filename:
+            # flat-file-dynamic-filename-v1: formato nuevo, mutuamente
+            # excluyente con el legacy -- ver docs/template_teradata_to_flat_file_v1.md,
+            # "Filename dinamico". Nunca se mezclan ambos formatos en el
+            # mismo objeto 'filename'.
+            if any(k in filename for k in ("parameter", "literal", "variable")):
+                errors.append(
+                    f"'{label}.destination.connection_manager.filename' mezcla el "
+                    "formato nuevo ('parts') con claves del formato legacy "
+                    "('parameter'/'literal'/'variable') -- son mutuamente "
+                    "excluyentes, nunca ambos en el mismo objeto 'filename'."
+                )
+            errors.extend(
+                _validate_filename_parts(
+                    filename.get("parts"), parameter_names, label
+                )
             )
         else:
             parameter = filename.get("parameter")
