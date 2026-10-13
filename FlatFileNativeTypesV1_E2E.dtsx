@@ -1,0 +1,160 @@
+<?xml version='1.0' encoding='utf-8'?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts" DTS:refId="Package" DTS:CreationDate="3/19/2026 2:45:21 PM" DTS:CreationName="Microsoft.Package" DTS:CreatorComputerName="SSIS-PACKAGE-FACTORY" DTS:CreatorName="SSIS-Package-Factory" DTS:DTSID="{ACF71BAC-AFD0-4004-AAD6-8AB2B78EBDC9}" DTS:ExecutableType="Microsoft.Package" DTS:LastModifiedProductVersion="17.0.1010.2" DTS:LocaleID="11274" DTS:ObjectName="FlatFileNativeTypesV1_E2E" DTS:PackageType="5" DTS:ProtectionLevel="2" DTS:VersionBuild="66" DTS:VersionGUID="{F529042E-F466-4FF8-BF76-849DDD14C271}">
+  <DTS:Property DTS:Name="PackageFormatVersion">8</DTS:Property>
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager DTS:refId="Package.ConnectionManagers[ffcFlatFileNativeTypesV1E2E]" DTS:CreationName="FLATFILE" DTS:DTSID="{469C889E-97AC-41FA-84F2-998363C62FAC}" DTS:ObjectName="ffcFlatFileNativeTypesV1E2E">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager DTS:Format="Delimited" DTS:LocaleID="11274" DTS:HeaderRowDelimiter="_x000D__x000A_" DTS:RowDelimiter="" DTS:TextQualifier="_x003C_none_x003E_" DTS:CodePage="1252" DTS:ConnectionString="FlatFileNativeTypesV1_E2E.txt">
+          <DTS:FlatFileColumns>
+            <DTS:FlatFileColumn DTS:ColumnType="Delimited" DTS:ColumnDelimiter="_x003B_" DTS:MaximumWidth="100" DTS:DataType="130" DTS:TextQualified="True" DTS:ObjectName="Nombre_Cliente" DTS:DTSID="{5855CF26-E8EB-4DFF-BBAC-821B06E9715F}" DTS:CreationName="" />
+            <DTS:FlatFileColumn DTS:ColumnType="Delimited" DTS:ColumnDelimiter="_x003B_" DTS:DataType="133" DTS:TextQualified="True" DTS:ObjectName="Fecha_Alta" DTS:DTSID="{5A522D43-18FF-4D3B-B5A7-EB3D7E39CAFF}" DTS:CreationName="" />
+            <DTS:FlatFileColumn DTS:ColumnType="Delimited" DTS:ColumnDelimiter="_x003B_" DTS:DataType="131" DTS:DataPrecision="15" DTS:DataScale="2" DTS:TextQualified="True" DTS:ObjectName="Importe_Total" DTS:DTSID="{0505276F-CFD1-4055-B4F3-C699684285BA}" DTS:CreationName="" />
+            <DTS:FlatFileColumn DTS:ColumnType="Delimited" DTS:ColumnDelimiter="_x000D__x000A_" DTS:DataType="16" DTS:TextQualified="True" DTS:ObjectName="Indicador_Activo" DTS:DTSID="{C3405577-C1AA-4285-AB54-57C6DD418966}" DTS:CreationName="" />
+          </DTS:FlatFileColumns>
+        </DTS:ConnectionManager>
+      </DTS:ObjectData>
+      <DTS:PropertyExpression DTS:Name="ConnectionString">"FlatFileNativeTypesV1_E2E.txt"</DTS:PropertyExpression>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:Variables>
+    </DTS:Variables>
+  <DTS:Executables>
+    <DTS:Executable DTS:refId="Package\Tarea Flujo de datos" DTS:CreationName="Microsoft.Pipeline" DTS:Description="Tarea Flujo de datos" DTS:DTSID="{0E6D2C2B-AB2C-4D70-A98B-D19E116FCC4D}" DTS:ExecutableType="Microsoft.Pipeline" DTS:LocaleID="-1" DTS:ObjectName="Tarea Flujo de datos" DTS:TaskContact="Performs high-performance data extraction, transformation and loading;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <pipeline version="1">
+          <components>
+            <component refId="Package\Tarea Flujo de datos\Destino de archivo plano" componentClassID="Microsoft.FlatFileDestination" contactInfo="Destino de archivo plano;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; Todos los derechos reservados; http://www.microsoft.com/sql/support;1" description="Destino de archivo plano" localeId="11274" name="Destino de archivo plano" version="1">
+              <properties>
+                <property dataType="System.Boolean" description="Especifica si los datos sobrescriben el archivo de destino o se anexan al mismo." name="Overwrite">true</property>
+                <property dataType="System.Null" description="Especifica el texto para escribir en el archivo de destino antes de escribir ningún dato." expressionType="Notify" name="Header" />
+                <property dataType="System.Boolean" description="Cuando el calificador de texto está habilitado, especifica si este contendrá secuencias de escape o no en los datos escritos en el archivo de destino." name="EscapeQualifier">false</property>
+              </properties>
+              <connections>
+                <connection refId="Package\Tarea Flujo de datos\Destino de archivo plano.Connections[FlatFileConnection]" connectionManagerID="Package.ConnectionManagers[ffcFlatFileNativeTypesV1E2E]" connectionManagerRefId="Package.ConnectionManagers[ffcFlatFileNativeTypesV1E2E]" name="FlatFileConnection" />
+              </connections>
+              <inputs>
+                <input refId="Package\Tarea Flujo de datos\Destino de archivo plano.Inputs[Entrada de destino de archivo plano]" hasSideEffects="true" name="Entrada de destino de archivo plano">
+                  <inputColumns>
+                    <inputColumn refId="Package\Tarea Flujo de datos\Destino de archivo plano.Inputs[Entrada de destino de archivo plano].Columns[Nombre_Cliente]" cachedDataType="wstr" cachedLength="100" cachedName="Nombre_Cliente" externalMetadataColumnId="Package\Tarea Flujo de datos\Destino de archivo plano.Inputs[Entrada de destino de archivo plano].ExternalColumns[Nombre_Cliente]" lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[Nombre_Cliente]" />
+                    <inputColumn refId="Package\Tarea Flujo de datos\Destino de archivo plano.Inputs[Entrada de destino de archivo plano].Columns[Fecha_Alta]" cachedDataType="dbDate" cachedName="Fecha_Alta" externalMetadataColumnId="Package\Tarea Flujo de datos\Destino de archivo plano.Inputs[Entrada de destino de archivo plano].ExternalColumns[Fecha_Alta]" lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[Fecha_Alta]" />
+                    <inputColumn refId="Package\Tarea Flujo de datos\Destino de archivo plano.Inputs[Entrada de destino de archivo plano].Columns[Importe_Total]" cachedDataType="numeric" cachedPrecision="15" cachedScale="2" cachedName="Importe_Total" externalMetadataColumnId="Package\Tarea Flujo de datos\Destino de archivo plano.Inputs[Entrada de destino de archivo plano].ExternalColumns[Importe_Total]" lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[Importe_Total]" />
+                    <inputColumn refId="Package\Tarea Flujo de datos\Destino de archivo plano.Inputs[Entrada de destino de archivo plano].Columns[Indicador_Activo]" cachedDataType="i1" cachedName="Indicador_Activo" externalMetadataColumnId="Package\Tarea Flujo de datos\Destino de archivo plano.Inputs[Entrada de destino de archivo plano].ExternalColumns[Indicador_Activo]" lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[Indicador_Activo]" />
+                  </inputColumns>
+                  <externalMetadataColumns isUsed="True">
+                    <externalMetadataColumn refId="Package\Tarea Flujo de datos\Destino de archivo plano.Inputs[Entrada de destino de archivo plano].ExternalColumns[Nombre_Cliente]" dataType="wstr" length="100" name="Nombre_Cliente" />
+                    <externalMetadataColumn refId="Package\Tarea Flujo de datos\Destino de archivo plano.Inputs[Entrada de destino de archivo plano].ExternalColumns[Fecha_Alta]" dataType="dbDate" name="Fecha_Alta" />
+                    <externalMetadataColumn refId="Package\Tarea Flujo de datos\Destino de archivo plano.Inputs[Entrada de destino de archivo plano].ExternalColumns[Importe_Total]" dataType="numeric" precision="15" scale="2" name="Importe_Total" />
+                    <externalMetadataColumn refId="Package\Tarea Flujo de datos\Destino de archivo plano.Inputs[Entrada de destino de archivo plano].ExternalColumns[Indicador_Activo]" dataType="i1" name="Indicador_Activo" />
+                  </externalMetadataColumns>
+                </input>
+              </inputs>
+            </component>
+            <component refId="Package\Tarea Flujo de datos\Teradata Source" componentClassID="Microsoft.SSISTeradataSrc" contactInfo="Teradata Source;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; Todos los derechos reservados; http://www.microsoft.com/sql/support;1" description="Teradata Source" name="Teradata Source" usesDispositions="true" version="1">
+              <properties>
+                <property dataType="System.String" description="The name of the table to be fetched." expressionType="Notify" name="TableName" />
+                <property dataType="System.String" description="The SQL command to be executed." expressionType="Notify" name="SqlCommand" UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor, Microsoft.DataTransformationServices.Controls, Version=17.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91">SELECT
+    Nombre_Cliente, Fecha_Alta, Importe_Total, Indicador_Activo
+FROM d_FlatFileNativeTypesV1_E2E</property>
+                <property dataType="System.Int32" description="Data transfer block size." expressionType="Notify" name="BlockSize">1048576</property>
+                <property dataType="System.Int32" description="Maximum size of a data buffer when 'Buffer mode' is applied. Value must be large enough to hold at least one data row (including 8 overhead bytes per row at most)." expressionType="Notify" name="BufferMaxSize">16775552</property>
+                <property dataType="System.Boolean" description="Indicates which type of Load method is used. True stands for 'Progress Buffered Rows'. False indicates 'Progress Row By Row'." expressionType="Notify" name="BufferMode">true</property>
+                <property dataType="System.Boolean" description="SQL requests and responses data encryption." expressionType="Notify" name="DataEncryption">false</property>
+                <property dataType="System.Int32" description="The code page to use when code page information is unavailable from the data source." expressionType="Notify" name="DefaultCodePage">1252</property>
+                <property dataType="System.String" description="A trace file name. Setting a value for this property enables TPT detailed tracing." expressionType="Notify" name="DetailedTracingFile" />
+                <property dataType="System.Int32" description="Specifies the types of diagnostic messages written by each instance of the dirver to an external log file. The diagnostic trace function provides more detailed information (including the version number) in the log file to aid in problem tracking and diagnosis." name="DetailedTracingLevel" typeConverter="DetailedTracingLevel">1</property>
+                <property dataType="System.Boolean" description="Whether or not to discard large rows." expressionType="Notify" name="DiscardLargeRow">false</property>
+                <property dataType="System.Boolean" description="Use maximal character buffers allocation factor. Used when 'Export Width Table ID' = 'Maximum Defaults'." expressionType="Notify" name="ExtendedStringColumnsAllocation">false</property>
+                <property dataType="System.Int32" description="Maximum row size (kb) it can support in export. Valid values are: 64, 1024." name="JobMaxRowSize" typeConverter="JobMaxRowSize">64</property>
+                <property dataType="System.Int32" description="Maximum number of sessions to log on." expressionType="Notify" name="MaxSessions">8</property>
+                <property dataType="System.Int32" description="Minimum number of sessions required." expressionType="Notify" name="MinSessions">4</property>
+                <property dataType="System.String" description="A user-defined query band expression." expressionType="Notify" name="QueryBandSessionInfo" />
+                <property dataType="System.Int32" description="Specifies whether to use spool or not while running the current Export job." name="SpoolMode" typeConverter="SpoolMode">0</property>
+                <property dataType="System.Int32" description="The number of hours to continue trying to log on when the maximum number of load jobs is already running on the Teradata Database." expressionType="Notify" name="TenacityHours">4</property>
+                <property dataType="System.Int32" description="The number of minutes to pause before retrying to log on when the maximum number of load jobs is already running on the Teradata Database." expressionType="Notify" name="TenacitySleep">6</property>
+                <property dataType="System.Boolean" description="Whether to allow Pass Through Characters (PTCs) to be exported from Teradata." expressionType="Notify" name="UnicodePassThrough">false</property>
+                <property dataType="System.Int32" description="The mode used to access the database." name="AccessMode" typeConverter="AccessMode">1</property>
+              </properties>
+              <connections>
+                <connection refId="Package\Tarea Flujo de datos\Teradata Source.Connections[TeradataConnection]" connectionManagerID="{29B4FDD4-193E-4D63-AC90-5C5CDA50E051}:external" connectionManagerRefId="Project.ConnectionManagers[cnxTeradata]" description="The Teradata runtime connection used to access the database." name="TeradataConnection" />
+              </connections>
+              <outputs>
+                <output refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output]" errorRowDisposition="FailComponent" name="Teradata Source Output" truncationRowDisposition="FailComponent">
+                  <outputColumns>
+                    <outputColumn refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[Nombre_Cliente]" dataType="wstr" externalMetadataColumnId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[Nombre_Cliente]" length="100" lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[Nombre_Cliente]" name="Nombre_Cliente" />
+                    <outputColumn refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[Fecha_Alta]" dataType="dbDate" externalMetadataColumnId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[Fecha_Alta]" lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[Fecha_Alta]" name="Fecha_Alta" />
+                    <outputColumn refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[Importe_Total]" dataType="numeric" externalMetadataColumnId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[Importe_Total]" precision="15" scale="2" lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[Importe_Total]" name="Importe_Total" />
+                    <outputColumn refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[Indicador_Activo]" dataType="i1" externalMetadataColumnId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[Indicador_Activo]" lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].Columns[Indicador_Activo]" name="Indicador_Activo" />
+                  </outputColumns>
+                  <externalMetadataColumns isUsed="True">
+                    <externalMetadataColumn refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[Nombre_Cliente]" dataType="wstr" length="100" name="Nombre_Cliente" />
+                    <externalMetadataColumn refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[Fecha_Alta]" dataType="dbDate" name="Fecha_Alta" />
+                    <externalMetadataColumn refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[Importe_Total]" dataType="numeric" precision="15" scale="2" name="Importe_Total" />
+                    <externalMetadataColumn refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output].ExternalColumns[Indicador_Activo]" dataType="i1" name="Indicador_Activo" />
+                  </externalMetadataColumns>
+                </output>
+                <output refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output]" isErrorOut="true" name="Teradata Source Error Output">
+                  <outputColumns>
+                    <outputColumn refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[Nombre_Cliente]" dataType="wstr" length="100" lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[Nombre_Cliente]" name="Nombre_Cliente" />
+                    <outputColumn refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[Fecha_Alta]" dataType="dbDate" lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[Fecha_Alta]" name="Fecha_Alta" />
+                    <outputColumn refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[Importe_Total]" dataType="numeric" precision="15" scale="2" lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[Importe_Total]" name="Importe_Total" />
+                    <outputColumn refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[Indicador_Activo]" dataType="i1" lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[Indicador_Activo]" name="Indicador_Activo" />
+                    <outputColumn refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[ErrorCode]" dataType="i4" lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[ErrorCode]" name="ErrorCode" specialFlags="1" />
+                    <outputColumn refId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[ErrorColumn]" dataType="i4" lineageId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Error Output].Columns[ErrorColumn]" name="ErrorColumn" specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+          </components>
+          <paths>
+            <path refId="Package\Tarea Flujo de datos.Paths[Teradata Source Output]" name="Teradata Source Output" startId="Package\Tarea Flujo de datos\Teradata Source.Outputs[Teradata Source Output]" endId="Package\Tarea Flujo de datos\Destino de archivo plano.Inputs[Entrada de destino de archivo plano]" />
+          </paths>
+        </pipeline>
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:DesignTimeProperties>&lt;Objects xmlns:gx="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" Version="8"&gt;
+  
+  &lt;Package design-time-name="Package"&gt;
+    &lt;LayoutInfo&gt;
+      &lt;gx:GraphLayout Capacity="4"&gt;
+        &lt;gx:NodeLayout Size="192,43" Id="Package\Tarea Flujo de datos" TopLeft="84.3749962281437,65.6842098051161" /&gt;
+        &lt;/gx:GraphLayout&gt;
+    &lt;/LayoutInfo&gt;
+  &lt;/Package&gt;
+  &lt;TaskHost design-time-name="Package\Tarea Flujo de datos"&gt;
+    &lt;LayoutInfo&gt;
+      &lt;gx:GraphLayout Capacity="4"&gt;
+        &lt;gx:NodeLayout Size="159,43" Id="Package\Tarea Flujo de datos\Teradata Source" TopLeft="140.999993741513,10.9473683008527" /&gt;
+        &lt;gx:NodeLayout Size="200,42" Id="Package\Tarea Flujo de datos\Destino de archivo plano" TopLeft="112.166663659115,120.719294686535" /&gt;
+        &lt;gx:EdgeLayout Id="Package\Tarea Flujo de datos.Paths[Teradata Source Output]" TopLeft="220.499993741513,53.9473683008527"&gt;
+          &lt;gx:EdgeLayout.Curve&gt;
+            &lt;mssgle:Curve StartConnector="{assembly:Null}" EndConnector="-8.33333008239802,66.7719263856823" Start="0,0" End="-8.33333008239802,59.2719263856823"&gt;
+              &lt;mssgle:Curve.Segments&gt;
+                &lt;mssgle:SegmentCollection Capacity="5"&gt;
+                  &lt;mssgle:LineSegment End="0,29.3859631928411" /&gt;
+                  &lt;mssgle:CubicBezierSegment Point1="0,29.3859631928411" Point2="0,33.3859631928411" Point3="-4,33.3859631928411" /&gt;
+                  &lt;mssgle:LineSegment End="-4.33333008239802,33.3859631928411" /&gt;
+                  &lt;mssgle:CubicBezierSegment Point1="-4.33333008239802,33.3859631928411" Point2="-8.33333008239802,33.3859631928411" Point3="-8.33333008239802,37.3859631928411" /&gt;
+                  &lt;mssgle:LineSegment End="-8.33333008239802,59.2719263856823" /&gt;
+                &lt;/mssgle:SegmentCollection&gt;
+              &lt;/mssgle:Curve.Segments&gt;
+            &lt;/mssgle:Curve&gt;
+          &lt;/gx:EdgeLayout.Curve&gt;
+          &lt;gx:EdgeLayout.Labels&gt;
+            &lt;gx:EdgeLabelCollection /&gt;
+          &lt;/gx:EdgeLayout.Labels&gt;
+        &lt;/gx:EdgeLayout&gt;
+      &lt;/gx:GraphLayout&gt;
+    &lt;/LayoutInfo&gt;
+  &lt;/TaskHost&gt;
+  &lt;PipelineComponentMetadata design-time-name="Package\Tarea Flujo de datos\Teradata Source"&gt;
+    &lt;Properties&gt;
+      &lt;Property&gt;
+        &lt;Name&gt;DataSourceViewID&lt;/Name&gt;
+      &lt;/Property&gt;
+    &lt;/Properties&gt;
+  &lt;/PipelineComponentMetadata&gt;
+&lt;/Objects&gt;</DTS:DesignTimeProperties>
+</DTS:Executable>

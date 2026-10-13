@@ -37,6 +37,30 @@ STRING_DATA_TYPES = {"str", "wstr"}
 NON_UNICODE_STRING_TYPE = "str"
 NUMERIC_DATA_TYPE = "numeric"
 
+# flat-file-native-column-types-v1: vocabulario COMPLETO de 'data_type' para
+# 'data_flow.source.columns[]', relevado contra TODAS las familias estables
+# (no solo flat_file): str/wstr/numeric ya se usaban (teradata-to-sql-v1.1,
+# derived-column-v1); i2/i4/i8 ya se usaban en specs reales committeados
+# (campanias_generated.json, derived_column_v1_e2e.json, etc.) y en el
+# vocabulario ya existente de mapping_planner/schema.py
+# (INTEGER_TYPES={"i2","i4","i8"}) y derived_planner/schema.py
+# (SUPPORTED_SOURCE_TYPES={"i2","i4","i8"}); dbDate/i1 son los 2 tipos
+# nuevos, evidencia real en Examples/Originals/CRM/CDNI_Promociones_Parametros.dtsx.
+# ANTES de este incremento, 'source.columns[].data_type' NO tenia ningun
+# conjunto cerrado -- cualquier string no vacio pasaba (un typo como
+# "dbdte" hubiera validado "ok" sin exigir ningun campo). Cierra esa laguna
+# preexistente para TODAS las familias (esta funcion es compartida).
+SUPPORTED_SOURCE_COLUMN_DATA_TYPES = {
+    "str", "wstr", "numeric", "i1", "i2", "i4", "i8", "dbDate",
+}
+
+# Tipos nativos SSIS sin metadata de texto/precision asociada -- nunca
+# llevan 'length'/'code_page'/'precision'/'scale' (evidencia real para
+# dbDate/i1; i2/i4/i8 ya se usaban sin estos campos en specs reales, nunca
+# se evidencio lo contrario -- ver busqueda exhaustiva previa a este
+# incremento, 0 coincidencias).
+SOURCE_COLUMN_TYPES_WITHOUT_METADATA = {"i1", "i2", "i4", "i8", "dbDate"}
+
 # template-teradata-to-flat-file-v1: segundo tipo de destino soportado,
 # ademas de 'ole_db' -- ver docs/template_teradata_to_flat_file_v1.md.
 # Decision de equipo "SQL-first" (evidencia real: 4 packages del proyecto
@@ -60,11 +84,32 @@ SUPPORTED_HEADER_ROW_DELIMITERS = {"CRLF", "SEMICOLON"}
 # TextQualifier: unico valor evidenciado en los 4 packages ('<none>').
 SUPPORTED_TEXT_QUALIFIERS = {"none"}
 
-# DataType de columna Flat File: unicos 2 evidenciados (str en 3/4 packages
-# completos + parte de Tokenizacion; wstr en el resto de Tokenizacion, un
-# caso de coercion interna del propio Flat File Destination sin Data
-# Conversion -- ver docs/template_teradata_to_flat_file_v1.md, "str -> wstr").
-SUPPORTED_FLAT_FILE_COLUMN_DATA_TYPES = {"str", "wstr"}
+# DataType de columna Flat File: originalmente 2 evidenciados (str/wstr, ver
+# docs, "str -> wstr"). flat-file-native-column-types-v1 agrega dbDate/
+# numeric/i1 -- evidencia real, Examples/Originals/CRM/CDNI_Promociones_Parametros.dtsx
+# (Teradata Source -> Flat File Destination preservando el tipo nativo de
+# extremo a extremo, SIN pasar por str/wstr -- patron "tipos nativos",
+# alternativo y coexistente con el patron SQL-first ya estable). i2/i4
+# agregados en un segundo paso del mismo incremento -- decision de equipo
+# (OPCION A de la auditoria de PromocionesNativeDelimitedV1): codigos SSIS
+# ESTANDAR de plataforma (DT_I2=18, DT_I4=3), confirmados por Gate SSDT real
+# (ejecucion contra d_promociones + reapertura sin diferencias inesperadas).
+# Mismo criterio de "sin metadata de ancho/texto" que i1 (misma categoria:
+# entero SSIS sin signo de longitud propia).
+SUPPORTED_FLAT_FILE_COLUMN_DATA_TYPES = {"str", "wstr", "dbDate", "numeric", "i1", "i2", "i4"}
+
+# Tipos nativos del lado Flat File Destination sin metadata de ancho/texto
+# (destination.columns[].target_length/target_precision/target_scale no
+# aplican) -- subconjunto evidenciado (dbDate/i1) + i2/i4 (codigos estandar,
+# ver nota arriba) de SUPPORTED_FLAT_FILE_COLUMN_DATA_TYPES.
+FLAT_FILE_NATIVE_TYPES_WITHOUT_METADATA = {"dbDate", "i1", "i2", "i4"}
+
+# Limite de plataforma SSIS para DT_NUMERIC (no inventado: limite documentado
+# de la plataforma, no una regla de negocio) -- usado para rechazar
+# 'target_precision' fuera de rango. scale > precision tambien se rechaza
+# (invalido matematicamente para cualquier DECIMAL/NUMERIC, no es una regla
+# especifica de SSIS).
+NUMERIC_MAX_PRECISION = 38
 
 # flat-file-dynamic-filename-v1: segunda forma de 'filename', ademas de la
 # legacy ('parameter'/'literal'/'variable' sueltos, orden fijo por codigo) --
@@ -72,8 +117,7 @@ SUPPORTED_FLAT_FILE_COLUMN_DATA_TYPES = {"str", "wstr"}
 # nuevo: 'filename.parts' (lista ordenada, orden = orden de concatenacion),
 # mutuamente excluyente con la forma legacy (nunca ambas en el mismo objeto
 # 'filename' -- deteccion estructural por presencia de la clave 'parts',
-# mismo criterio ya usado para 'destination.type' y para el formato
-# control-flow-v1/'executables').
+# mismo criterio ya usado para 'destination.type').
 SUPPORTED_FILENAME_PART_TYPES = {"parameter", "literal", "variable", "current_date"}
 
 # Evidencia real (Examples/Originals/CRM/InProTarjetaCrm.dtsx, Flat File CM
@@ -360,6 +404,26 @@ def _validate_flat_file_destination(
                 f"vino: {cm.get('text_qualifier')!r}."
             )
 
+        # flat-file-native-column-types-v1: 'column_delimiter' (opcional,
+        # estructurado -- NUNCA una expresion SSIS cruda) solo tiene sentido
+        # para format='delimited'. RaggedRight nunca usa delimitador entre
+        # columnas (siempre ColumnDelimiter="" en columnas no-terminador,
+        # ver flat_file_generator.py) -- declarar 'column_delimiter' ahi es
+        # un error del spec, no un no-op silencioso.
+        column_delimiter = cm.get("column_delimiter")
+        if column_delimiter is not None:
+            if cm.get("format") != "delimited":
+                errors.append(
+                    f"'{label}.destination.connection_manager.column_delimiter' solo "
+                    "aplica cuando 'format'='delimited' -- RaggedRight nunca usa "
+                    "delimitador entre columnas."
+                )
+            elif not _non_empty_str(column_delimiter):
+                errors.append(
+                    f"'{label}.destination.connection_manager.column_delimiter', si "
+                    "esta presente, no puede estar vacio."
+                )
+
         filename = cm.get("filename")
         if not isinstance(filename, dict):
             errors.append(
@@ -468,6 +532,8 @@ def _validate_flat_file_destination(
 
         target_data_type = col.get("target_data_type")
         target_length = col.get("target_length")
+        target_precision = col.get("target_precision")
+        target_scale = col.get("target_scale")
         # Columna sentinel pura (row_terminator=true, sin source ni metadata
         # de datos real, ej. 'EndLine'): target_data_type/target_length
         # quedan OPCIONALES. Cualquier otra columna (terminator con datos
@@ -480,15 +546,75 @@ def _validate_flat_file_destination(
                     f"{sorted(SUPPORTED_FLAT_FILE_COLUMN_DATA_TYPES)}; "
                     f"vino: {target_data_type!r}."
                 )
-            if not _positive_int(target_length):
-                errors.append(
-                    f"{c_label}.target_length es obligatorio y debe ser entero positivo."
-                )
+            elif target_data_type in STRING_DATA_TYPES:
+                if not _positive_int(target_length):
+                    errors.append(
+                        f"{c_label}.target_length es obligatorio y debe ser entero "
+                        f"positivo para target_data_type={target_data_type!r}."
+                    )
+                if target_precision is not None or target_scale is not None:
+                    errors.append(
+                        f"{c_label} (target_data_type={target_data_type!r}) no admite "
+                        "'target_precision'/'target_scale' -- son exclusivos de "
+                        "target_data_type='numeric'."
+                    )
+            elif target_data_type == NUMERIC_DATA_TYPE:
+                # flat-file-native-column-types-v1: 'numeric' preserva el
+                # tipo nativo SSIS (DataType=131) en vez de pasar por
+                # str/wstr -- ver evidencia real,
+                # Examples/Originals/CRM/CDNI_Promociones_Parametros.dtsx.
+                if not _positive_int(target_precision):
+                    errors.append(
+                        f"{c_label} (target_data_type='numeric') requiere "
+                        "'target_precision' entero positivo."
+                    )
+                elif target_precision > NUMERIC_MAX_PRECISION:
+                    errors.append(
+                        f"{c_label}.target_precision = {target_precision} supera el "
+                        f"maximo soportado por SSIS DT_NUMERIC ({NUMERIC_MAX_PRECISION})."
+                    )
+                if not _non_negative_int(target_scale):
+                    errors.append(
+                        f"{c_label} (target_data_type='numeric') requiere "
+                        "'target_scale' entero >= 0."
+                    )
+                elif _positive_int(target_precision) and target_scale > target_precision:
+                    errors.append(
+                        f"{c_label}.target_scale ({target_scale}) no puede ser mayor "
+                        f"que target_precision ({target_precision})."
+                    )
+                if target_length is not None:
+                    errors.append(
+                        f"{c_label} (target_data_type='numeric') no admite "
+                        "'target_length' -- usa 'target_precision'/'target_scale'."
+                    )
+            elif target_data_type in FLAT_FILE_NATIVE_TYPES_WITHOUT_METADATA:
+                # dbDate / i1: tipos nativos SSIS sin metadata de texto ni
+                # precision asociada -- ver evidencia real (misma referencia
+                # que arriba).
+                if target_length is not None:
+                    errors.append(
+                        f"{c_label} (target_data_type={target_data_type!r}) no admite "
+                        "'target_length' -- es un tipo nativo SSIS sin ancho de texto."
+                    )
+                if target_precision is not None or target_scale is not None:
+                    errors.append(
+                        f"{c_label} (target_data_type={target_data_type!r}) no admite "
+                        "'target_precision'/'target_scale' -- son exclusivos de "
+                        "target_data_type='numeric'."
+                    )
         target_code_page = col.get("target_code_page")
-        if target_code_page is not None and not _positive_int(target_code_page):
-            errors.append(
-                f"{c_label}.target_code_page, si esta presente, debe ser entero positivo."
-            )
+        if target_code_page is not None:
+            if not _positive_int(target_code_page):
+                errors.append(
+                    f"{c_label}.target_code_page, si esta presente, debe ser entero positivo."
+                )
+            elif not is_pure_sentinel and target_data_type not in STRING_DATA_TYPES:
+                errors.append(
+                    f"{c_label} (target_data_type={target_data_type!r}) no admite "
+                    "'target_code_page' -- es exclusivo de target_data_type en "
+                    f"{sorted(STRING_DATA_TYPES)}."
+                )
 
     if len(terminator_indexes) == 0:
         errors.append(
@@ -507,6 +633,26 @@ def _validate_flat_file_destination(
             f"'{label}.destination.columns': la columna con 'row_terminator: true' "
             "debe ser la ULTIMA de la lista (unico orden evidenciado en el corpus "
             "real -- el terminador de fila siempre va al final)."
+        )
+
+    # flat-file-native-column-types-v1: el caso LEGACY de Delimited de 1 sola
+    # columna (esa unica columna es a la vez el terminador, ej.
+    # TarjetaDebitoSinUsoLink) nunca necesito un delimitador entre columnas
+    # -- se preserva sin exigir 'column_delimiter'. Un Delimited real
+    # MULTICOLUMNA (evidencia: Examples/Originals/CRM/CDNI_Promociones_Parametros.dtsx,
+    # 26 columnas) SI lo necesita siempre, de forma inequivoca -- no se
+    # defaultea silenciosamente a ningun caracter.
+    if (
+        isinstance(cm, dict)
+        and cm.get("format") == "delimited"
+        and len(columns) > 1
+        and not _non_empty_str(cm.get("column_delimiter"))
+    ):
+        errors.append(
+            f"'{label}.destination.connection_manager.column_delimiter' es "
+            "obligatorio cuando 'format'='delimited' y hay mas de 1 columna en "
+            "'destination.columns' -- el caso legacy de 1 sola columna (que es a "
+            "la vez el terminador) no lo requiere."
         )
 
     return errors
@@ -623,6 +769,11 @@ def validate_spec(spec: Dict[str, Any], project_context: Dict[str, Any]) -> List
         if not _non_empty_str(data_type):
             errors.append(f"{label}.data_type es obligatorio y no puede estar vacio.")
             data_type = None
+        elif data_type not in SUPPORTED_SOURCE_COLUMN_DATA_TYPES:
+            errors.append(
+                f"{label}.data_type debe ser uno de "
+                f"{sorted(SUPPORTED_SOURCE_COLUMN_DATA_TYPES)}; vino: {data_type!r}."
+            )
         if data_type in STRING_DATA_TYPES and not _positive_int(col.get("length")):
             errors.append(
                 f"{label} (data_type={data_type!r}) requiere 'length' entero positivo."
@@ -640,6 +791,18 @@ def validate_spec(spec: Dict[str, Any], project_context: Dict[str, Any]) -> List
                 errors.append(
                     f"{label} (data_type='numeric') requiere 'scale' entero >= 0."
                 )
+        if data_type in SOURCE_COLUMN_TYPES_WITHOUT_METADATA:
+            # flat-file-native-column-types-v1: dbDate/i1 (nuevos) e i2/i4/i8
+            # (ya existian, nunca se evidencio uso con estos campos) son
+            # tipos nativos SSIS sin metadata de texto/precision -- ver
+            # SOURCE_COLUMN_TYPES_WITHOUT_METADATA.
+            for forbidden_field in ("length", "code_page", "precision", "scale"):
+                if col.get(forbidden_field) is not None:
+                    errors.append(
+                        f"{label} (data_type={data_type!r}) no admite "
+                        f"'{forbidden_field}' -- es un tipo nativo SSIS sin metadata "
+                        "de texto/precision asociada."
+                    )
 
     # -----------------------------------------------------------------
     # transformations — 0, 1 o 2 elementos: 'data_conversion' y

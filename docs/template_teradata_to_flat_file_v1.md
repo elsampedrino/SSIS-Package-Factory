@@ -365,7 +365,11 @@ imposible).
 
 ## Filename dinámico (`flat-file-dynamic-filename-v1`)
 
-**STATUS: IMPLEMENTED / PENDING SSDT GATE.** Incremento aditivo sobre
+**STATUS: STABLE / SSDT VALIDATED / E2E EXECUTED.** Gate manual confirmado:
+`PromocionesV0.dtsx` abrió en SSDT sin diálogo de resincronización, se
+ejecutó correctamente contra Teradata real y produjo el archivo con
+sufijo `AAAAMMDD` correspondiente a la fecha de ejecución (no a la fecha
+de generación) en dos corridas en días distintos. Incremento aditivo sobre
 `template-teradata-to-flat-file-v1` (que permanece `STABLE / SSDT
 VALIDATED` para todas sus capacidades previas). Agrega un **segundo
 formato** para `destination.connection_manager.filename`, mutuamente
@@ -449,6 +453,176 @@ sigue usando `getdate()` siempre, sin excepción. Para testabilidad
 determinista, `_resolve_static_connection_string` acepta un parámetro
 `now` inyectable (default `None` → fecha real) — los tests nunca dependen
 del reloj.
+
+## Tipos nativos SSIS (`flat-file-native-column-types-v1`)
+
+**STATUS: GATE SSDT APROBADO (ejecución real contra `d_promociones` +
+reapertura sin diferencias no esperadas) / PENDING FINAL SSDT REOPEN GATE
+(sobre la versión con `WHERE fec_calendario = DATE - 1`) / READY FOR
+ISOLATED COMMIT tras ese Gate final.** Incremento aditivo sobre
+`template-teradata-to-flat-file-v1` (que permanece `STABLE / SSDT
+VALIDATED` para RaggedRight/filename/SQL-first) y sobre
+`flat-file-dynamic-filename-v1` (`STABLE`, sin relación). Agrega un
+**segundo patrón** de representación de columnas, alternativo y
+coexistente con SQL-first: en vez de pre-formatear todo a texto en el SQL
+(`CAST`/`TO_CHAR`/`LPAD`/`COALESCE`), este patrón preserva los **tipos
+nativos SSIS** de extremo a extremo (Teradata Source → Flat File
+Destination), dejando que SSIS serialice el texto final.
+
+Evidencia real: `Examples/Originals/CRM/CDNI_Promociones_Parametros.dtsx`
+(paquete productivo, creado manualmente en SSDT, validado por el usuario
+funcional — **evidencia de solo lectura, nunca modificado ni commiteado**).
+`SELECT` de 26 columnas explícitas sin ningún `CAST`/`TO_CHAR`/`LPAD`/
+`COALESCE`; Flat File `Format=Delimited`, separador `;`, última columna
+real con terminador CRLF, sin sentinel `EndLine`.
+
+### Tipos soportados
+
+| Tipo | DataType SSIS (pipeline) | DataType FlatFileColumn | Metadata requerida | Evidencia |
+|---|---|---|---|---|
+| `str` | — | 129 | `length`, `code_page` | real (corpus original) |
+| `wstr` | — | 130 | `length` | real |
+| `dbDate` | — | 133 | ninguna (sin `length`/`code_page`/`precision`/`scale`) | real (`CDNI_Promociones_Parametros.dtsx`) |
+| `numeric` | — | 131 | `precision`, `scale` (sin `length`/`code_page`) | real |
+| `i1` | — | 16 | ninguna | real |
+| `i2` | — | 18 | ninguna | **confirmado por Gate SSDT real** (`PromocionesNativeDelimitedV1`) — `DTS:FlatFileColumn.DataType` permanece `18` tras reapertura/guardado en SSDT |
+| `i4` | — | 3 | ninguna | **confirmado por Gate SSDT real** (`PromocionesNativeDelimitedV1`) — sin cambios tras reapertura/guardado en SSDT |
+
+Códigos `133`/`131`/`16` extraídos **exactos** del XML real (no
+inventados). `i2`/`i4` (18/3) fueron decisión de equipo — Opción A de la
+auditoría de `PromocionesNativeDelimitedV1`: códigos SSIS estándar de
+plataforma — y quedaron **confirmados por Gate SSDT real**: tras ejecutar
+el paquete contra `d_promociones` (21 columnas) y reabrirlo en SSDT, el
+`DataFlow` fue aceptado sin errores (un warning de sincronización de
+metadata apareció y desapareció tras reabrir — ver más abajo la
+corrección `i2`→`ui2`) y `ColumnWidth`/`MaximumWidth` se confirmaron
+ausentes para `i2`/`i4`, igual que `i1`/`dbDate`/`numeric`.
+`SUPPORTED_SOURCE_COLUMN_DATA_TYPES` (en `spec_validator.py`)
+también reconoce `i8` (sin uso evidenciado aún en Flat File Destination,
+no agregado a `SUPPORTED_FLAT_FILE_COLUMN_DATA_TYPES` por falta de
+necesidad confirmada) — ya se usaban `i2`/`i4`/`i8` en specs reales de
+otras familias (`campanias_generated.json`, `derived_column_v1_e2e.json`,
+etc.) y en el vocabulario ya existente de
+`mapping_planner/schema.py`/`derived_planner/schema.py`, pero **antes de
+este incremento no existía ningún conjunto cerrado** para
+`source.columns[].data_type` — cualquier string no vacío pasaba la
+validación (un typo como `"dbdte"` hubiera validado "ok"). Este
+incremento cierra esa laguna preexistente para **todas** las familias,
+no solo flat_file.
+
+### ProcessSpec
+
+```json
+{"name": "Fecha_Alta", "data_type": "dbDate"}
+{"name": "Importe", "data_type": "numeric", "precision": 17, "scale": 2}
+{"name": "Indicador", "data_type": "i1"}
+```
+En `destination.columns[]`: `target_data_type` + `target_precision`/
+`target_scale` (solo `numeric`) — **nunca** `target_length` ni
+`target_code_page` para estos 3 tipos (rechazado explícitamente si se
+declaran). `target_precision` limitado a 38 (límite de plataforma SSIS
+DT_NUMERIC, no una regla de negocio inventada); `target_scale` no puede
+superar `target_precision`.
+
+### Delimited multicolumna — 3 correcciones sobre el comportamiento previo
+
+La única evidencia previa de `Delimited` (`TarjetaDebitoSinUsoLink`) tenía
+**una sola columna, que además era el terminador** — el código nunca fue
+ejercitado con una columna no-terminador en Delimited real.
+`CDNI_Promociones_Parametros` (26 columnas) reveló 3 diferencias:
+
+1. **`ColumnType="Delimited"` en TODAS las columnas**, no solo en el
+   terminador (antes: solo la última columna lo tenía).
+2. **`ColumnDelimiter` configurable** vía
+   `connection_manager.column_delimiter` (antes: hardcodeado a `""` para
+   toda columna no-terminador, nunca evidenciado como incorrecto porque la
+   única referencia previa no tenía columnas intermedias). Codificación
+   SSIS (`_xHHHH_`) generalizada mecánicamente desde los 2 casos ya
+   evidenciados (`;`→`_x003B_`, CRLF→`_x000D__x000A_`) — no limitado a
+   `;`, cualquier delimitador que el spec declare.
+3. **Sin `ColumnWidth` en Delimited**, ni siquiera para columnas `str`/
+   `wstr` (antes: se asumía igual que RaggedRight). Solo `MaximumWidth` se
+   preserva para `str`/`wstr`; RaggedRight no se modificó.
+
+`column_delimiter` es **obligatorio** cuando `format="delimited"` y hay
+más de 1 columna (nunca se defaultea silenciosamente); el caso legacy de
+Delimited de 1 sola columna (que es a la vez el terminador, ej.
+`TarjetaDebitoSinUsoLink`) no lo requiere — comportamiento preservado sin
+cambios.
+
+### Corrección `i2` → `ui2` (solo `externalMetadataColumn` del Flat File Destination)
+
+Evidencia real: comparación estructural byte-a-byte entre el `.dtsx`
+generado por Factory y el mismo paquete reabierto/guardado por SSDT tras
+el Gate funcional (`Examples/Originals/CRM/PromocionesNativeDelimitedV1.dtsx`,
+evidencia de solo lectura, nunca modificada). Única diferencia funcional
+encontrada en las 3 columnas `SMALLINT` (`i2`): el
+`externalMetadataColumn.dataType` del **Flat File Destination**
+(la declaración de tipo del lado del archivo, dentro del mismo
+componente) pasó de `i2` a `ui2` (`DT_UI2`, entero sin signo de 16 bits).
+
+Confirmado que **ningún otro atributo cambia**:
+
+- Teradata Source (`outputColumn`/`externalMetadataColumn`): permanece `i2`.
+- Flat File Destination `inputColumn.cachedDataType`: permanece `i2`.
+- `DTS:FlatFileColumn.DataType` (Connection Manager, capa física): permanece `18`.
+- Solo el `externalMetadataColumn` del lado destino del Flat File
+  Destination se resincroniza a `ui2`.
+
+Esto **no implica** que el `SMALLINT` de Teradata sea unsigned — es una
+compatibilidad puntual que SSDT aplica específicamente en ese punto de la
+tubería al reabrir un Flat File Destination con una columna `i2`
+proveniente de Teradata. La Factory reproduce esta metadata
+(`_FLAT_FILE_DESTINATION_EXTERNAL_TYPE_OVERRIDES = {"i2": "ui2"}` en
+`flat_file_generator.py`) para que el `.dtsx` generado sea ya
+idéntico al que SSDT dejaría tras reabrir, evitando que el usuario deba
+reabrir/guardar manualmente para que desaparezca el warning de
+sincronización. La regla está acotada exclusivamente a esta familia
+(`TERADATA_TO_FLAT_FILE`) y a este punto exacto de la tubería — no se
+generalizó a `i4` (sin evidencia de necesitarlo) ni a ningún otro
+componente.
+
+### Overwrite
+
+Confirmado **FIT sin cambios de código**: `Overwrite=true` ya estaba
+hardcodeado en `templates/teradata_to_flat_file_base.dtsx` desde el
+template original (evidencia: `DatosContactoProcesadoras`) y
+`_build_flat_file_destination` nunca toca el bloque `<properties>` del
+componente — sobrevive intacto a cada generación. Byte-idéntico entre el
+paquete real y los artefactos ya generados por Factory. La semántica real
+de sobrescritura (atomicidad, comportamiento bajo archivo bloqueado) **no
+se puede confirmar solo con XML** — queda pendiente del Gate manual con 2
+ejecuciones consecutivas.
+
+### Limitaciones de este incremento
+
+- No existe descubrimiento automático de metadata Teradata — los tipos
+  siguen siendo siempre explícitos en el `ProcessSpec`.
+- No se generan conversiones SQL automáticas — este patrón coexiste con
+  SQL-first, no lo reemplaza; cada spec elige uno u otro por columna según
+  el requerimiento real.
+- El formato exacto de `DATE`/`DECIMAL` en el archivo final (`YYYY-MM-DD`,
+  coma decimal) está respaldado por evidencia de que no hay conversión en
+  SQL ni en el pipeline, pero la causalidad exacta en tiempo de escritura
+  (`LocaleID` vs. comportamiento interno de SSIS) **no se confirma por
+  inspección XML** — pendiente de Gate manual.
+- `i2`/`i4` (SMALLINT/INTEGER nativos) usan códigos SSIS estándar de
+  plataforma, **confirmados por Gate SSDT real** (`PromocionesNativeDelimitedV1`,
+  ejecución contra `d_promociones` + reapertura en SSDT). Para `i2`
+  específicamente, ver la corrección `i2`→`ui2` (solo
+  `externalMetadataColumn` del Flat File Destination, arriba).
+- No se agregó ningún soporte nuevo de Control Flow.
+- El filtro `WHERE fec_calendario = DATE - 1` (información a día vencido)
+  usado en el `ProcessSpec` de `PromocionesNativeDelimitedV1` es una
+  **regla de negocio confirmada de ese proceso puntual**, no una regla
+  global de la Factory — cada `ProcessSpec` declara su propio `WHERE`
+  (o ninguno) según el requerimiento real; el generador no impone ni
+  asume ningún filtro de fecha.
+- `STABLE`/`SSDT VALIDATED` para este incremento (`flat-file-native-column-types-v1`):
+  Gate funcional SSDT aprobado (ejecución real + reapertura sin
+  diferencias no esperadas) — pendiente únicamente del Gate final de
+  reapertura sobre el `.dtsx` con el filtro `DATE - 1` ya incorporado
+  antes de declarar cierre formal.
 
 ## Schema de columnas — Ragged Right
 

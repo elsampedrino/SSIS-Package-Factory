@@ -112,18 +112,89 @@ _HEADER_ROW_DELIMITER_ENCODED = {
 }
 
 # ColumnDelimiter de la columna que lleva el terminador de fila (row_terminator):
-# SIEMPRE CRLF en los 4 packages reales auditados, INCLUSO en
+# SIEMPRE CRLF en los 4+1 packages reales auditados (incl.
+# CDNI_Promociones_Parametros, Delimited multicolumna), INCLUSO en
 # TarjetaDebitoSinUsoLink, cuyo HeaderRowDelimiter es ';' -- son dos atributos
 # independientes en la evidencia real, nunca el mismo valor por definicion.
 # No se expone como campo del spec (cero variacion real).
 _ROW_TERMINATOR_COLUMN_DELIMITER_ENCODED = _HEADER_ROW_DELIMITER_ENCODED["CRLF"]
 
-# DataType (FlatFileColumn) -- codigos SSIS estandar, unicos dos evidenciados
-# en el corpus (str/wstr, ver docs/template_teradata_to_flat_file_v1.md).
+
+def _encode_ssis_delimiter(value: str) -> str:
+    """
+    Codifica un delimitador arbitrario (ej. ';', ',', '|') al patron de
+    escape hexadecimal que SSIS usa en atributos XML para caracteres
+    especiales -- mismo patron ya evidenciado en
+    _HEADER_ROW_DELIMITER_ENCODED (';' -> '_x003B_', CRLF -> '_x000D__x000A_')
+    y en TextQualifier ('<none>' -> '_x003C_none_x003E_'). Generalizacion
+    MECANICA de esos 2 casos conocidos (un bloque '_xHHHH_' por caracter,
+    punto de codigo Unicode en hexadecimal mayusculas de 4 digitos) -- NO
+    una tabla cerrada de valores, para no hardcodear ';' como unico
+    delimitador posible (flat-file-native-column-types-v1,
+    'column_delimiter' debe poder representar cualquier delimitador que el
+    spec declare explicitamente, ver evidencia real,
+    Examples/Originals/CRM/CDNI_Promociones_Parametros.dtsx).
+    """
+    return "".join(f"_x{ord(ch):04X}_" for ch in value)
+
+# DataType (FlatFileColumn) -- codigos SSIS estandar. str/wstr originales
+# (ver docs/template_teradata_to_flat_file_v1.md). flat-file-native-column-types-v1
+# agrega dbDate/numeric/i1 -- codigos extraidos EXACTOS de evidencia real
+# (Examples/Originals/CRM/CDNI_Promociones_Parametros.dtsx, FlatFileColumn
+# real, no inventados): Fec_Calendario/Fec_Inicio_Vigencia/Fec_Fin_Vigencia
+# (DATE) -> DataType="133"; Pct_Reintegro/Mto_Tope_Reintegro/Pct_Aporte
+# (DECIMAL) -> DataType="131"; los 15 Fla_* (BYTEINT) -> DataType="16".
 _FLAT_FILE_COLUMN_DATA_TYPE_CODES = {
     "str": "129",
     "wstr": "130",
+    "numeric": "131",
+    "i1": "16",
+    "dbDate": "133",
+    # i2/i4: codigos SSIS ESTANDAR de plataforma (DT_I2=18, DT_I4=3) --
+    # decision de equipo, OPCION A de la auditoria de
+    # PromocionesNativeDelimitedV1. CONFIRMADO por Gate SSDT real
+    # (Examples/Originals/CRM/PromocionesNativeDelimitedV1.dtsx, guardado
+    # por SSDT tras resolver el warning de sincronizacion): el codigo
+    # DTS:FlatFileColumn.DataType permanecio en "18"/"3" sin cambios en
+    # los 6 campos i2/i4 reales -- confirma que estos 2 codigos NO
+    # necesitaban correccion. La UNICA correccion real que SSDT aplico fue
+    # en otra capa completamente distinta (externalMetadataColumn del
+    # Flat File Destination, ver _FLAT_FILE_DESTINATION_EXTERNAL_TYPE_OVERRIDES
+    # mas abajo) -- este diccionario (FlatFileColumn fisico) qued/o
+    # confirmado tal cual estaba.
+    "i2": "18",
+    "i4": "3",
 }
+
+# flat-file-native-column-types-v1 -- correccion puntual post-Gate SSDT real
+# (Examples/Originals/CRM/PromocionesNativeDelimitedV1.dtsx): para columnas
+# SMALLINT (i2) ORIGINADAS en Teradata, el 'externalMetadataColumn' del
+# Flat File DESTINATION (la declaracion de tipo del lado del archivo, NO
+# del Teradata Source ni del DTS:FlatFileColumn fisico) se guarda como
+# 'ui2' cuando SSDT resincroniza -- evidencia DIRECTA, comparacion byte a
+# byte entre el .dtsx generado por Factory y el guardado por SSDT tras
+# ejecutar contra Teradata real, 3 columnas identicas
+# (Id_d_Producto_Visa/Master, Id_Producto_Debito). El Teradata Source
+# (outputColumn/externalMetadataColumn), el propio inputColumn del Flat
+# File Destination y el DTS:FlatFileColumn.DataType="18" NO cambiaron --
+# la correccion esta estrictamente acotada a esta UNICA ubicacion XML.
+# No se generaliza a i4 (sin evidencia de necesitarlo: los 3 campos i4
+# reales del mismo Gate NO mostraron esta discrepancia) ni a ningun otro
+# tipo. No es una conversion de datos: el valor fisico escrito al archivo
+# no cambia (DataType="18" se mantiene), es puramente la etiqueta de tipo
+# de pipeline que SSIS usa para marcar signed/unsigned en este punto
+# especifico de la cadena.
+_FLAT_FILE_DESTINATION_EXTERNAL_TYPE_OVERRIDES = {"i2": "ui2"}
+
+# Tipos nativos SSIS sin ColumnWidth/MaximumWidth propios -- evidencia real
+# para dbDate/numeric/i1 (ninguna columna del paquete real declara ancho,
+# SSIS lo resuelve internamente segun el tipo); i2/i4 se agregan por el
+# mismo criterio (enteros SSIS sin longitud de texto propia, ver nota en
+# _FLAT_FILE_COLUMN_DATA_TYPE_CODES). spec_validator.py ya garantiza que
+# estos 5 tipos nunca traen 'target_length' -- esta constante solo
+# documenta la intencion, el codigo de abajo se apoya en que
+# 'target_length' sea None para ellos.
+_FLAT_FILE_NATIVE_TYPES_WITHOUT_WIDTH = {"dbDate", "numeric", "i1", "i2", "i4"}
 
 # DataType (Variable) -- codigo SSIS estandar para System.String, unico tipo
 # de variable con evidencia real en este milestone (ver
@@ -410,17 +481,42 @@ def _build_flat_file_connection_manager(
     flat_file_columns_el = inner_cm.find(dts("FlatFileColumns"))
     _clear_children(flat_file_columns_el, dts("FlatFileColumn"))
 
+    # flat-file-native-column-types-v1: Delimited multicolumna (evidencia
+    # real, Examples/Originals/CRM/CDNI_Promociones_Parametros.dtsx) difiere
+    # de RaggedRight en 3 puntos para columnas NO-terminador -- las 3
+    # correcciones de abajo. El caso legacy de Delimited de 1 sola columna
+    # (esa columna es a la vez el terminador, ej. TarjetaDebitoSinUsoLink)
+    # nunca pasa por la rama 'not is_terminator', asi que queda identico a
+    # antes.
+    is_delimited_format = spec["format"] == "delimited"
+    column_delimiter_encoded = None
+    if is_delimited_format and spec.get("column_delimiter") is not None:
+        column_delimiter_encoded = _encode_ssis_delimiter(spec["column_delimiter"])
+
     for col in columns:
         is_terminator = bool(col.get("row_terminator"))
         col_el = ET.SubElement(flat_file_columns_el, dts("FlatFileColumn"))
         if is_terminator:
             col_el.set(dts("ColumnType"), "Delimited")
             col_el.set(dts("ColumnDelimiter"), _ROW_TERMINATOR_COLUMN_DELIMITER_ENCODED)
+        elif is_delimited_format:
+            # CORRECCION 1 (evidencia real): en Delimited, TODA columna --
+            # no solo el terminador -- lleva ColumnType="Delimited".
+            # CORRECCION 2: el delimitador entre columnas viene del spec
+            # ('column_delimiter'), nunca vacio -- spec_validator.py ya
+            # garantiza que esta presente cuando hay mas de 1 columna.
+            col_el.set(dts("ColumnType"), "Delimited")
+            col_el.set(dts("ColumnDelimiter"), column_delimiter_encoded)
         else:
             col_el.set(dts("ColumnDelimiter"), _EMPTY_COLUMN_DELIMITER)
         target_length = col.get("target_length")
         if target_length is not None:
-            if not is_terminator:
+            # CORRECCION 3 (evidencia real): en Delimited, ninguna columna
+            # lleva ColumnWidth (ni siquiera las wstr/str no-terminador) --
+            # solo RaggedRight lo usa. MaximumWidth si se preserva para
+            # str/wstr en ambos formatos (dbDate/numeric/i1 nunca traen
+            # 'target_length', ya lo garantiza spec_validator.py).
+            if not is_terminator and not is_delimited_format:
                 col_el.set(dts("ColumnWidth"), str(target_length))
             col_el.set(dts("MaximumWidth"), str(target_length))
         # Columna sentinel pura (row_terminator=true sin datos reales, ej.
@@ -429,6 +525,16 @@ def _build_flat_file_connection_manager(
         # este caso (EndLine en DatosContactoProcesadoras/Semanal).
         col_data_type = col.get("target_data_type", "str")
         col_el.set(dts("DataType"), _FLAT_FILE_COLUMN_DATA_TYPE_CODES[col_data_type])
+        if col_data_type == "numeric":
+            # DataPrecision/DataScale -- nombres de atributo y presencia
+            # exacta extraidos de evidencia real (Pct_Reintegro/
+            # Mto_Tope_Reintegro/Pct_Aporte en CDNI_Promociones_Parametros.dtsx).
+            target_precision = col.get("target_precision")
+            target_scale = col.get("target_scale")
+            if target_precision is not None:
+                col_el.set(dts("DataPrecision"), str(target_precision))
+            if target_scale is not None:
+                col_el.set(dts("DataScale"), str(target_scale))
         col_el.set(dts("TextQualified"), "True")
         col_el.set(dts("ObjectName"), col["target"])
         col_el.set(dts("DTSID"), new_guid())
@@ -490,16 +596,31 @@ def _build_flat_file_destination(
             target_type = "str"
             target_length = 255
             target_code_page = 1252
+            target_precision = None
+            target_scale = None
         else:
             target_type = col["target_data_type"]
             target_length = col.get("target_length")
             target_code_page = col.get("target_code_page")
+            # flat-file-native-column-types-v1: solo 'numeric' trae
+            # target_precision/target_scale (spec_validator.py ya garantiza
+            # que ningun otro tipo los declara).
+            target_precision = col.get("target_precision")
+            target_scale = col.get("target_scale")
 
+        # flat-file-native-column-types-v1: 'ui2' solo aplica al dataType
+        # del externalMetadataColumn (ver _FLAT_FILE_DESTINATION_EXTERNAL_TYPE_OVERRIDES
+        # -- evidencia real, Gate SSDT de PromocionesNativeDelimitedV1).
+        # inputColumn sigue usando source_meta["data_type"] sin traducir
+        # (ver abajo) -- nunca 'target_type' directamente, para no afectar
+        # el Teradata Source ni el lado 'origen' del mapping.
+        external_type = _FLAT_FILE_DESTINATION_EXTERNAL_TYPE_OVERRIDES.get(target_type, target_type)
         ext_ref = input_external_column_ref(data_flow, name, DESTINATION_INPUT_NAME, target_name)
         external_columns_el.append(
             _make_external_metadata_column(
-                ext_ref, target_name, target_type,
+                ext_ref, target_name, external_type,
                 length=target_length, code_page=target_code_page,
+                precision=target_precision, scale=target_scale,
             )
         )
 

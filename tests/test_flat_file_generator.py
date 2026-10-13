@@ -47,6 +47,10 @@ TEMPLATE_PATH = os.path.join(REPO_ROOT, "templates", "teradata_to_flat_file_base
 E2E_SPEC_PATH = os.path.join(REPO_ROOT, "specs", "teradata_to_flat_file_v1_e2e.json")
 E2E_OUTPUT_PATH = os.path.join(REPO_ROOT, "TeradataToFlatFileV1_E2E.dtsx")
 
+# flat-file-native-column-types-v1
+NATIVE_TYPES_E2E_SPEC_PATH = os.path.join(REPO_ROOT, "specs", "flat_file_native_types_v1_e2e.json")
+NATIVE_TYPES_E2E_OUTPUT_PATH = os.path.join(REPO_ROOT, "FlatFileNativeTypesV1_E2E.dtsx")
+
 MEDIOS_DE_PAGO_DIR = os.path.join(REPO_ROOT, "Examples", "Originals", "MediosDePago")
 MEDIOS_DE_PAGO_CONTEXT = build_project_context(
     os.path.join(MEDIOS_DE_PAGO_DIR, "MediosDePago.dtproj"),
@@ -1255,6 +1259,825 @@ class TeradataToFlatFileV1E2ETests(unittest.TestCase):
         self.assertEqual(golden_props["AccessMode"].text, gen_props["AccessMode"].text)
         self.assertEqual(golden_props["TableName"].text, gen_props["TableName"].text)
         self.assertIsNotNone(gen_props["SqlCommand"].text)
+
+
+# ---------------------------------------------------------------------------
+# flat-file-native-column-types-v1 -- dbDate/numeric/i1, ademas de str/wstr.
+# Ver docs/template_teradata_to_flat_file_v1.md, "Tipos nativos SSIS".
+# Evidencia real: Examples/Originals/CRM/CDNI_Promociones_Parametros.dtsx
+# (paquete productivo, Delimited multicolumna, NO se modifica ni se
+# commitea).
+# ---------------------------------------------------------------------------
+class NativeColumnTypesValidatorTests(unittest.TestCase):
+    """source.columns[]/destination.columns[] -- validacion de los 3 tipos
+    nuevos (dbDate/numeric/i1) y del cierre de la laguna preexistente en
+    source.columns[].data_type (antes sin conjunto cerrado)."""
+
+    def _spec_with_source_column(self, **col_overrides):
+        spec = _base_spec()
+        col = {"name": "Campo_Nuevo", "data_type": "dbDate"}
+        col.update(col_overrides)
+        spec["data_flow"]["source"]["columns"].append(col)
+        return spec
+
+    def _spec_with_destination_column(self, **col_overrides):
+        spec = _base_spec()
+        col = {"source": "Fec_Proceso_PIC", "target": "Campo_Nuevo", "target_data_type": "dbDate"}
+        col.update(col_overrides)
+        # Insertar antes del sentinel EndLine (debe seguir siendo la ultima).
+        cols = spec["data_flow"]["destination"]["columns"]
+        cols.insert(len(cols) - 1, col)
+        return spec
+
+    # --- 1-3: tipos nuevos validos ---
+    def test_source_dbdate_valid(self):
+        spec = self._spec_with_source_column(name="Fecha_Alta", data_type="dbDate")
+        self.assertEqual(validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT), [])
+
+    def test_source_numeric_valid(self):
+        spec = self._spec_with_source_column(
+            name="Importe", data_type="numeric", precision=15, scale=2
+        )
+        self.assertEqual(validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT), [])
+
+    def test_source_i1_valid(self):
+        spec = self._spec_with_source_column(name="Indicador", data_type="i1")
+        self.assertEqual(validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT), [])
+
+    def test_destination_dbdate_valid(self):
+        spec = self._spec_with_destination_column(
+            source="Fec_Proceso_PIC", target="Fecha_Alta", target_data_type="dbDate"
+        )
+        # El source referenciado (Fec_Proceso_PIC) es 'str' en _base_spec();
+        # spec_validator.py no cruza tipos source/destination (documentado
+        # en la auditoria), asi que esto valida la FORMA, no una conversion
+        # real -- igual criterio que el resto de este modulo.
+        self.assertEqual(validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT), [])
+
+    def test_destination_numeric_valid(self):
+        spec = self._spec_with_destination_column(
+            source="Fec_Proceso_PIC", target="Importe",
+            target_data_type="numeric", target_precision=15, target_scale=2,
+        )
+        self.assertEqual(validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT), [])
+
+    def test_destination_i1_valid(self):
+        spec = self._spec_with_destination_column(
+            source="Fec_Proceso_PIC", target="Indicador", target_data_type="i1"
+        )
+        self.assertEqual(validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT), [])
+
+    # --- i2/i4 (SMALLINT/INTEGER nativos, OPCION A de la auditoria de
+    # PromocionesNativeDelimitedV1) -- mismo criterio de validacion que
+    # dbDate/i1: sin length/code_page/precision/scale. ---
+    def test_source_i2_valid(self):
+        spec = self._spec_with_source_column(name="Id_Producto", data_type="i2")
+        self.assertEqual(validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT), [])
+
+    def test_source_i4_valid(self):
+        spec = self._spec_with_source_column(name="Id_Promo", data_type="i4")
+        self.assertEqual(validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT), [])
+
+    def test_destination_i2_valid(self):
+        spec = self._spec_with_destination_column(
+            source="Fec_Proceso_PIC", target="Id_Producto", target_data_type="i2"
+        )
+        self.assertEqual(validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT), [])
+
+    def test_destination_i4_valid(self):
+        spec = self._spec_with_destination_column(
+            source="Fec_Proceso_PIC", target="Id_Promo", target_data_type="i4"
+        )
+        self.assertEqual(validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT), [])
+
+    def test_i2_with_length_rejected(self):
+        spec = self._spec_with_source_column(name="Id_Producto", data_type="i2", length=6)
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("no admite 'length'" in e for e in errors))
+
+    def test_i4_with_code_page_rejected(self):
+        spec = self._spec_with_source_column(name="Id_Promo", data_type="i4", code_page=1252)
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("no admite 'code_page'" in e for e in errors))
+
+    def test_destination_i2_with_length_rejected(self):
+        spec = self._spec_with_destination_column(
+            source="Fec_Proceso_PIC", target="Id_Producto",
+            target_data_type="i2", target_length=6,
+        )
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("no admite 'target_length'" in e for e in errors))
+
+    def test_destination_i4_with_precision_rejected(self):
+        spec = self._spec_with_destination_column(
+            source="Fec_Proceso_PIC", target="Id_Promo",
+            target_data_type="i4", target_precision=11,
+        )
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("no admite 'target_precision'" in e for e in errors))
+
+    # --- 4: wstr sin regresion ---
+    def test_wstr_still_valid_no_regression(self):
+        spec = self._spec_with_destination_column(
+            source="Fec_Proceso_PIC", target="Texto_Largo",
+            target_data_type="wstr", target_length=200,
+        )
+        self.assertEqual(validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT), [])
+
+    # --- 5: tipo source desconocido ---
+    def test_unknown_source_data_type_rejected(self):
+        spec = self._spec_with_source_column(name="Campo_Raro", data_type="blob")
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("data_type debe ser uno de" in e for e in errors))
+
+    # --- 6: tipo destination desconocido ---
+    def test_unknown_destination_data_type_rejected(self):
+        spec = self._spec_with_destination_column(
+            source="Fec_Proceso_PIC", target="Campo_Raro", target_data_type="blob"
+        )
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("target_data_type debe ser uno de" in e for e in errors))
+
+    # --- 7: combinaciones de metadata invalida (source) ---
+    def test_dbdate_with_length_rejected(self):
+        spec = self._spec_with_source_column(name="Fecha_Alta", data_type="dbDate", length=8)
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("no admite 'length'" in e for e in errors))
+
+    def test_i1_with_precision_rejected(self):
+        spec = self._spec_with_source_column(name="Indicador", data_type="i1", precision=1)
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("no admite 'precision'" in e for e in errors))
+
+    # --- 8: numeric sin precision ---
+    def test_numeric_without_precision_rejected(self):
+        spec = self._spec_with_source_column(name="Importe", data_type="numeric", scale=2)
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("requiere 'precision'" in e for e in errors))
+
+    # --- 9: numeric sin scale ---
+    def test_numeric_without_scale_rejected(self):
+        spec = self._spec_with_source_column(name="Importe", data_type="numeric", precision=15)
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("requiere 'scale'" in e for e in errors))
+
+    # --- 10: numeric con rangos invalidos (destino, donde se definio el limite) ---
+    def test_numeric_precision_over_platform_max_rejected(self):
+        spec = self._spec_with_destination_column(
+            source="Fec_Proceso_PIC", target="Importe",
+            target_data_type="numeric", target_precision=39, target_scale=2,
+        )
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("supera el maximo soportado" in e for e in errors))
+
+    def test_numeric_scale_greater_than_precision_rejected(self):
+        spec = self._spec_with_destination_column(
+            source="Fec_Proceso_PIC", target="Importe",
+            target_data_type="numeric", target_precision=5, target_scale=9,
+        )
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("no puede ser mayor" in e for e in errors))
+
+    # --- 11: dbDate con length indebido (destino) ---
+    def test_destination_dbdate_with_length_rejected(self):
+        spec = self._spec_with_destination_column(
+            source="Fec_Proceso_PIC", target="Fecha_Alta",
+            target_data_type="dbDate", target_length=8,
+        )
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("no admite 'target_length'" in e for e in errors))
+
+    # --- 12: i1 con code_page indebido (destino) ---
+    def test_destination_i1_with_code_page_rejected(self):
+        spec = self._spec_with_destination_column(
+            source="Fec_Proceso_PIC", target="Indicador",
+            target_data_type="i1", target_code_page=1252,
+        )
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("no admite 'target_code_page'" in e for e in errors))
+
+
+class ColumnDelimiterValidatorTests(unittest.TestCase):
+    """connection_manager.column_delimiter -- opcional, solo para Delimited,
+    obligatorio cuando hay mas de 1 columna."""
+
+    def _delimited_two_column_spec(self, column_delimiter=None):
+        destination_overrides = {
+            "connection_manager": {
+                "name": "ffcTest",
+                "format": "delimited",
+                "code_page": 1252,
+                "locale_id": 11274,
+                "unicode": False,
+                "header_row_delimiter": "CRLF",
+                "text_qualifier": "none",
+                "filename": {"literal": "archivo.txt"},
+            },
+        }
+        if column_delimiter is not None:
+            destination_overrides["connection_manager"]["column_delimiter"] = column_delimiter
+        spec = _base_spec(**destination_overrides)
+        spec["data_flow"]["destination"]["columns"] = [
+            {"source": "Fec_Proceso_PIC", "target": "Fec_Proceso_PIC", "target_data_type": "str", "target_length": 8, "target_code_page": 1252},
+            {"source": "Nom_Cliente_PIC", "target": "Nom_Cliente_PIC", "target_data_type": "str", "target_length": 50, "target_code_page": 1252, "row_terminator": True},
+        ]
+        return spec
+
+    def test_column_delimiter_required_for_multicolumn_delimited(self):
+        spec = self._delimited_two_column_spec(column_delimiter=None)
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("column_delimiter' es obligatorio" in e for e in errors))
+
+    def test_column_delimiter_semicolon_accepted(self):
+        spec = self._delimited_two_column_spec(column_delimiter=";")
+        self.assertEqual(validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT), [])
+
+    def test_column_delimiter_pipe_accepted(self):
+        # #26: delimitador distinto de ';' tambien configurable.
+        spec = self._delimited_two_column_spec(column_delimiter="|")
+        self.assertEqual(validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT), [])
+
+    def test_column_delimiter_empty_string_rejected(self):
+        spec = self._delimited_two_column_spec(column_delimiter="")
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("no puede estar vacio" in e for e in errors))
+
+    def test_column_delimiter_rejected_on_ragged_right(self):
+        spec = _base_spec()
+        spec["data_flow"]["destination"]["connection_manager"]["column_delimiter"] = ";"
+        errors = validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT)
+        self.assertTrue(any("solo aplica cuando" in e for e in errors))
+
+    # --- 27: compatibilidad Delimited legacy de 1 sola columna ---
+    def test_single_column_delimited_legacy_does_not_require_column_delimiter(self):
+        spec = _base_spec(
+            connection_manager={
+                "name": "ffcTest",
+                "format": "delimited",
+                "code_page": 1252,
+                "locale_id": 11274,
+                "unicode": False,
+                "header_row_delimiter": "CRLF",
+                "text_qualifier": "none",
+                "filename": {"literal": "archivo.txt"},
+            },
+        )
+        spec["data_flow"]["destination"]["columns"] = [
+            {"source": "Fec_Proceso_PIC", "target": "Fec_Proceso_PIC", "target_data_type": "str", "target_length": 8, "target_code_page": 1252, "row_terminator": True},
+        ]
+        self.assertEqual(validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT), [])
+
+
+class FlatFileNativeTypesE2ETests(unittest.TestCase):
+    """Genera FlatFileNativeTypesV1_E2E.dtsx (wstr/dbDate/numeric/i1,
+    Delimited multicolumna con ';', ultima columna real con CRLF, sin
+    sentinel EndLine, filename fijo, Overwrite heredado) y verifica
+    estructuralmente el XML resultante."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.spec = _load_json(NATIVE_TYPES_E2E_SPEC_PATH)
+        assert validate_spec(cls.spec, BIPSUC_CONTEXT) == []
+        generate(cls.spec, BIPSUC_CONTEXT, TEMPLATE_PATH, NATIVE_TYPES_E2E_OUTPUT_PATH)
+        cls.ir = ssis_parser.parse_file(NATIVE_TYPES_E2E_OUTPUT_PATH)
+        cls.validation = ssis_validator.validate_ir(cls.ir)
+        cls.data_flow = cls.ir["data_flows"][0]
+        cls.root = ET.parse(NATIVE_TYPES_E2E_OUTPUT_PATH).getroot()
+        cls.NS = {"DTS": "www.microsoft.com/SqlServer/Dts"}
+
+    def _teradata_source(self):
+        return next(
+            c for c in self.root.iter("component")
+            if c.get("componentClassID") == "Microsoft.SSISTeradataSrc"
+        )
+
+    def _flat_file_cm(self):
+        return next(
+            cm for cm in self.root.findall("DTS:ConnectionManagers/DTS:ConnectionManager", self.NS)
+            if cm.get("{www.microsoft.com/SqlServer/Dts}CreationName") == "FLATFILE"
+        )
+
+    def _flat_file_destination(self):
+        return next(
+            c for c in self.root.iter("component")
+            if c.get("componentClassID") == "Microsoft.FlatFileDestination"
+        )
+
+    # --- 34: parser/validator ---
+    def test_parser_result_is_valid(self):
+        self.assertIsInstance(self.ir, dict)
+
+    def test_validator_has_no_errors(self):
+        self.assertEqual(self.validation["errors"], [])
+        self.assertTrue(self.validation["valid"])
+
+    # --- 13-14: Teradata Source outputColumn/externalMetadataColumn ---
+    def test_teradata_source_output_column_types(self):
+        comp = self._teradata_source()
+        out_normal = next(
+            o for o in comp.find("outputs").findall("output") if o.get("isErrorOut") != "true"
+        )
+        cols = {c.get("name"): c for c in out_normal.find("outputColumns").findall("outputColumn")}
+        self.assertEqual(cols["Nombre_Cliente"].get("dataType"), "wstr")
+        self.assertEqual(cols["Fecha_Alta"].get("dataType"), "dbDate")
+        self.assertIsNone(cols["Fecha_Alta"].get("length"))
+        self.assertEqual(cols["Importe_Total"].get("dataType"), "numeric")
+        self.assertEqual(cols["Importe_Total"].get("precision"), "15")
+        self.assertEqual(cols["Importe_Total"].get("scale"), "2")
+        self.assertEqual(cols["Indicador_Activo"].get("dataType"), "i1")
+        self.assertIsNone(cols["Indicador_Activo"].get("length"))
+
+    def test_teradata_source_external_metadata_column_matches_output_column(self):
+        comp = self._teradata_source()
+        out_normal = next(
+            o for o in comp.find("outputs").findall("output") if o.get("isErrorOut") != "true"
+        )
+        oc = {c.get("name"): c for c in out_normal.find("outputColumns").findall("outputColumn")}
+        emc = {c.get("name"): c for c in out_normal.find("externalMetadataColumns").findall("externalMetadataColumn")}
+        for name in oc:
+            self.assertEqual(
+                (oc[name].get("dataType"), oc[name].get("length"), oc[name].get("precision"), oc[name].get("scale")),
+                (emc[name].get("dataType"), emc[name].get("length"), emc[name].get("precision"), emc[name].get("scale")),
+                f"mismatch en {name}",
+            )
+
+    # --- 15-17: FlatFileColumn DataType codes ---
+    def _flat_file_columns(self):
+        inner_cm = self._flat_file_cm().find("DTS:ObjectData/DTS:ConnectionManager", self.NS)
+        cols = inner_cm.find("DTS:FlatFileColumns", self.NS).findall("DTS:FlatFileColumn", self.NS)
+        return {c.get("{www.microsoft.com/SqlServer/Dts}ObjectName"): c for c in cols}
+
+    def test_flat_file_column_datatype_133_for_dbdate(self):
+        cols = self._flat_file_columns()
+        self.assertEqual(cols["Fecha_Alta"].get("{www.microsoft.com/SqlServer/Dts}DataType"), "133")
+
+    def test_flat_file_column_datatype_131_for_numeric(self):
+        cols = self._flat_file_columns()
+        self.assertEqual(cols["Importe_Total"].get("{www.microsoft.com/SqlServer/Dts}DataType"), "131")
+
+    def test_flat_file_column_datatype_16_for_i1(self):
+        cols = self._flat_file_columns()
+        self.assertEqual(cols["Indicador_Activo"].get("{www.microsoft.com/SqlServer/Dts}DataType"), "16")
+
+    def test_flat_file_column_datatype_130_for_wstr_no_regression(self):
+        cols = self._flat_file_columns()
+        self.assertEqual(cols["Nombre_Cliente"].get("{www.microsoft.com/SqlServer/Dts}DataType"), "130")
+
+    # --- 18: DataPrecision/DataScale ---
+    def test_flat_file_column_numeric_has_precision_and_scale(self):
+        cols = self._flat_file_columns()
+        NS = "{www.microsoft.com/SqlServer/Dts}"
+        self.assertEqual(cols["Importe_Total"].get(f"{NS}DataPrecision"), "15")
+        self.assertEqual(cols["Importe_Total"].get(f"{NS}DataScale"), "2")
+
+    # --- 19-20: ausencia de ColumnWidth ---
+    def test_native_types_have_no_column_width(self):
+        cols = self._flat_file_columns()
+        NS = "{www.microsoft.com/SqlServer/Dts}"
+        for name in ("Fecha_Alta", "Importe_Total", "Indicador_Activo"):
+            self.assertIsNone(cols[name].get(f"{NS}ColumnWidth"), f"{name} no deberia tener ColumnWidth")
+
+    def test_wstr_has_no_column_width_in_delimited(self):
+        # Correccion especifica de Delimited: ni siquiera wstr/str llevan
+        # ColumnWidth en Delimited (solo MaximumWidth) -- evidencia real.
+        cols = self._flat_file_columns()
+        NS = "{www.microsoft.com/SqlServer/Dts}"
+        self.assertIsNone(cols["Nombre_Cliente"].get(f"{NS}ColumnWidth"))
+
+    # --- 21: MaximumWidth de str/wstr ---
+    def test_wstr_has_maximum_width(self):
+        cols = self._flat_file_columns()
+        NS = "{www.microsoft.com/SqlServer/Dts}"
+        self.assertEqual(cols["Nombre_Cliente"].get(f"{NS}MaximumWidth"), "100")
+
+    def test_native_types_have_no_maximum_width(self):
+        cols = self._flat_file_columns()
+        NS = "{www.microsoft.com/SqlServer/Dts}"
+        for name in ("Fecha_Alta", "Importe_Total", "Indicador_Activo"):
+            self.assertIsNone(cols[name].get(f"{NS}MaximumWidth"))
+
+    # --- 22: Delimited multicolumna con ';' ---
+    def test_non_terminator_columns_use_semicolon_delimiter(self):
+        cols = self._flat_file_columns()
+        NS = "{www.microsoft.com/SqlServer/Dts}"
+        for name in ("Nombre_Cliente", "Fecha_Alta", "Importe_Total"):
+            self.assertEqual(cols[name].get(f"{NS}ColumnDelimiter"), "_x003B_")
+
+    # --- 23: ColumnType='Delimited' en todas las columnas ---
+    def test_all_columns_have_column_type_delimited(self):
+        cols = self._flat_file_columns()
+        NS = "{www.microsoft.com/SqlServer/Dts}"
+        for name, col in cols.items():
+            self.assertEqual(col.get(f"{NS}ColumnType"), "Delimited", f"{name} deberia tener ColumnType=Delimited")
+
+    # --- 24: CRLF en ultima columna real ---
+    def test_last_real_column_has_crlf_terminator(self):
+        cols = self._flat_file_columns()
+        NS = "{www.microsoft.com/SqlServer/Dts}"
+        self.assertEqual(cols["Indicador_Activo"].get(f"{NS}ColumnDelimiter"), "_x000D__x000A_")
+
+    # --- 25: sin sentinel EndLine ---
+    def test_no_endline_sentinel_column(self):
+        cols = self._flat_file_columns()
+        self.assertNotIn("EndLine", cols)
+        self.assertEqual(len(cols), 4)
+
+    # --- 31: Overwrite=true ---
+    def test_overwrite_is_true(self):
+        comp = self._flat_file_destination()
+        props = {p.get("name"): p.text for p in comp.find("properties").findall("property")}
+        self.assertEqual(props.get("Overwrite"), "true")
+
+    # --- 32: mappings y lineage ---
+    def test_input_columns_reference_correct_lineage(self):
+        comp = self._flat_file_destination()
+        input_el = comp.find("inputs/input")
+        in_cols = {c.get("cachedName"): c for c in input_el.find("inputColumns").findall("inputColumn")}
+        ts = self._teradata_source()
+        out_normal = next(
+            o for o in ts.find("outputs").findall("output") if o.get("isErrorOut") != "true"
+        )
+        oc = {c.get("name"): c for c in out_normal.find("outputColumns").findall("outputColumn")}
+        for name, in_col in in_cols.items():
+            self.assertEqual(in_col.get("lineageId"), oc[name].get("lineageId"))
+
+    # --- 33: precision/scale propagados al destino ---
+    def test_destination_external_metadata_has_precision_scale_for_numeric(self):
+        comp = self._flat_file_destination()
+        ext_cols = {
+            c.get("name"): c
+            for c in comp.find("inputs/input/externalMetadataColumns").findall("externalMetadataColumn")
+        }
+        self.assertEqual(ext_cols["Importe_Total"].get("precision"), "15")
+        self.assertEqual(ext_cols["Importe_Total"].get("scale"), "2")
+
+    # --- correccion puntual i2->ui2: confirmar que NO se filtra a otros
+    # tipos (dbDate/numeric/i1/wstr) -- el override en
+    # _FLAT_FILE_DESTINATION_EXTERNAL_TYPE_OVERRIDES tiene una unica
+    # entrada ("i2") y este fixture no tiene ninguna columna i2, asi que
+    # confirma el caso "sin override aplicable" de punta a punta. ---
+    def test_external_metadata_types_unaffected_by_i2_override_for_other_types(self):
+        comp = self._flat_file_destination()
+        ext_cols = {
+            c.get("name"): c
+            for c in comp.find("inputs/input/externalMetadataColumns").findall("externalMetadataColumn")
+        }
+        self.assertEqual(ext_cols["Nombre_Cliente"].get("dataType"), "wstr")
+        self.assertEqual(ext_cols["Fecha_Alta"].get("dataType"), "dbDate")
+        self.assertEqual(ext_cols["Importe_Total"].get("dataType"), "numeric")
+        self.assertEqual(ext_cols["Indicador_Activo"].get("dataType"), "i1")
+
+    # --- 29: filename fijo ---
+    def test_filename_is_fixed_no_date(self):
+        cm = self._flat_file_cm()
+        prop_expr = cm.find("DTS:PropertyExpression", self.NS)
+        self.assertEqual(prop_expr.text, '"FlatFileNativeTypesV1_E2E.txt"')
+        self.assertNotIn("getdate", prop_expr.text.lower())
+
+    # --- topology (Data Flow sin componentes intermedios) ---
+    def test_topology_is_source_to_destination_only(self):
+        class_ids = {c["class_id"] for c in self.data_flow["components"]}
+        self.assertEqual(class_ids, {"Microsoft.SSISTeradataSrc", "Microsoft.FlatFileDestination"})
+
+    # --- security: sin infraestructura/credenciales reales ---
+    def test_no_corporate_infrastructure_in_generated_artifact(self):
+        with open(NATIVE_TYPES_E2E_OUTPUT_PATH, encoding="utf-8") as f:
+            content = f.read()
+        for forbidden in ("srvssisdatosqa", "srvsftp02", "tdgnn.ccba", "CDNI_Promociones_Parametros"):
+            self.assertNotIn(forbidden, content)
+
+    def test_no_secrets_in_generated_artifact(self):
+        with open(NATIVE_TYPES_E2E_OUTPUT_PATH, encoding="utf-8") as f:
+            content = f.read()
+        for forbidden in ("Salt=", "IV=", "Algorithm=", "Password=", "DTS:Password", "TeraPassword"):
+            self.assertNotIn(forbidden, content)
+
+
+class NativeTypesRaggedRightRegressionTests(unittest.TestCase):
+    """#28: RaggedRight no debe verse afectado por los cambios de Delimited
+    multicolumna ni por el vocabulario de tipos nuevo -- regresion explicita
+    post flat-file-native-column-types-v1."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.spec = _base_spec()
+        cls.tmp_dir = tempfile.mkdtemp(prefix="ssis_native_types_raggedright_regression_")
+        cls.output_path = os.path.join(cls.tmp_dir, "Generated.dtsx")
+        generate(cls.spec, MEDIOS_DE_PAGO_CONTEXT, TEMPLATE_PATH, cls.output_path)
+        cls.root = ET.parse(cls.output_path).getroot()
+        cls.NS = {"DTS": "www.microsoft.com/SqlServer/Dts"}
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.tmp_dir, ignore_errors=True)
+
+    def test_ragged_right_columns_still_have_column_width(self):
+        cm = next(
+            cm for cm in self.root.findall("DTS:ConnectionManagers/DTS:ConnectionManager", self.NS)
+            if cm.get("{www.microsoft.com/SqlServer/Dts}CreationName") == "FLATFILE"
+        )
+        inner_cm = cm.find("DTS:ObjectData/DTS:ConnectionManager", self.NS)
+        self.assertEqual(inner_cm.get("{www.microsoft.com/SqlServer/Dts}Format"), "RaggedRight")
+        NS = "{www.microsoft.com/SqlServer/Dts}"
+        cols = inner_cm.find("DTS:FlatFileColumns", self.NS).findall("DTS:FlatFileColumn", self.NS)
+        non_terminator = [c for c in cols if c.get(f"{NS}ColumnType") is None]
+        self.assertTrue(len(non_terminator) > 0)
+        for c in non_terminator:
+            self.assertIsNotNone(c.get(f"{NS}ColumnWidth"))
+            self.assertEqual(c.get(f"{NS}ColumnDelimiter"), "")
+
+
+class NativeTypesFilenameDynamicRegressionTests(unittest.TestCase):
+    """#30: filename dinamico (parts[]/current_date) no se ve afectado por
+    flat-file-native-column-types-v1 -- regresion explicita, reutilizando
+    current_date junto con una columna de tipo nativo nuevo en el mismo
+    Data Flow para confirmar que ambas capacidades son ortogonales."""
+
+    def test_current_date_filename_combines_with_dbdate_column(self):
+        spec = _base_spec()
+        spec["data_flow"]["destination"]["connection_manager"]["filename"] = {
+            "parts": [
+                {"type": "literal", "value": "archivo_"},
+                {"type": "current_date", "format": "yyyyMMdd"},
+                {"type": "literal", "value": ".txt"},
+            ]
+        }
+        spec["data_flow"]["source"]["columns"].append(
+            {"name": "Fecha_Extra", "data_type": "dbDate"}
+        )
+        cols = spec["data_flow"]["destination"]["columns"]
+        cols.insert(
+            len(cols) - 1,
+            {"source": "Fecha_Extra", "target": "Fecha_Extra", "target_data_type": "dbDate"},
+        )
+        self.assertEqual(validate_spec(spec, MEDIOS_DE_PAGO_CONTEXT), [])
+        tmp_dir = tempfile.mkdtemp(prefix="ssis_native_types_dynamic_filename_regression_")
+        try:
+            output_path = os.path.join(tmp_dir, "Generated.dtsx")
+            generate(spec, MEDIOS_DE_PAGO_CONTEXT, TEMPLATE_PATH, output_path)
+            root = ET.parse(output_path).getroot()
+            NS = {"DTS": "www.microsoft.com/SqlServer/Dts"}
+            cm = next(
+                cm for cm in root.findall("DTS:ConnectionManagers/DTS:ConnectionManager", NS)
+                if cm.get("{www.microsoft.com/SqlServer/Dts}CreationName") == "FLATFILE"
+            )
+            prop_expr = cm.find("DTS:PropertyExpression", NS)
+            self.assertIn("getdate()", prop_expr.text)
+            ts = next(
+                c for c in root.iter("component")
+                if c.get("componentClassID") == "Microsoft.SSISTeradataSrc"
+            )
+            out_normal = next(
+                o for o in ts.find("outputs").findall("output") if o.get("isErrorOut") != "true"
+            )
+            oc = {c.get("name"): c for c in out_normal.find("outputColumns").findall("outputColumn")}
+            self.assertEqual(oc["Fecha_Extra"].get("dataType"), "dbDate")
+        finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+class FlatFileNativeTypesStructuralComparisonTests(unittest.TestCase):
+    """#35: comparacion estructural (solo metadata/configuracion, nunca
+    GUIDs/connection strings/hosts/credenciales) entre
+    FlatFileNativeTypesV1_E2E.dtsx (sintetico) y el paquete productivo real
+    CDNI_Promociones_Parametros.dtsx (evidencia de SOLO LECTURA, nunca
+    modificado ni commiteado)."""
+
+    REAL_PACKAGE_PATH = os.path.join(
+        REPO_ROOT, "Examples", "Originals", "CRM", "CDNI_Promociones_Parametros.dtsx"
+    )
+
+    @classmethod
+    def setUpClass(cls):
+        if not os.path.isfile(cls.REAL_PACKAGE_PATH):
+            raise unittest.SkipTest(
+                "CDNI_Promociones_Parametros.dtsx no disponible en este entorno "
+                "(evidencia real, no commiteada -- ver docs/template_teradata_to_flat_file_v1.md)."
+            )
+        if not os.path.isfile(NATIVE_TYPES_E2E_OUTPUT_PATH):
+            spec = _load_json(NATIVE_TYPES_E2E_SPEC_PATH)
+            generate(spec, BIPSUC_CONTEXT, TEMPLATE_PATH, NATIVE_TYPES_E2E_OUTPUT_PATH)
+        cls.NS = {"DTS": "www.microsoft.com/SqlServer/Dts"}
+
+    def _flat_file_inner_cm(self, path):
+        root = ET.parse(path).getroot()
+        cm = next(
+            cm for cm in root.findall("DTS:ConnectionManagers/DTS:ConnectionManager", self.NS)
+            if cm.get("{www.microsoft.com/SqlServer/Dts}CreationName") == "FLATFILE"
+        )
+        return cm.find("DTS:ObjectData/DTS:ConnectionManager", self.NS)
+
+    def test_connection_manager_level_attributes_match(self):
+        real = self._flat_file_inner_cm(self.REAL_PACKAGE_PATH)
+        new = self._flat_file_inner_cm(NATIVE_TYPES_E2E_OUTPUT_PATH)
+        NS = "{www.microsoft.com/SqlServer/Dts}"
+        for attr in ("Format", "LocaleID", "HeaderRowDelimiter", "RowDelimiter", "TextQualifier", "CodePage"):
+            self.assertEqual(
+                real.get(f"{NS}{attr}"), new.get(f"{NS}{attr}"), f"{attr} no coincide"
+            )
+
+    def test_flat_file_column_attribute_shape_matches_by_datatype(self):
+        NS = "{www.microsoft.com/SqlServer/Dts}"
+        ignored = {"ObjectName", "DTSID", "CreationName"}
+
+        def shape_by_type(path):
+            inner = self._flat_file_inner_cm(path)
+            result = {}
+            for c in inner.find("DTS:FlatFileColumns", self.NS).findall("DTS:FlatFileColumn", self.NS):
+                dt = c.get(f"{NS}DataType")
+                attrs = {k.split("}")[-1] for k in c.attrib} - ignored
+                result.setdefault(dt, set()).update(attrs)
+            return result
+
+        real_shapes = shape_by_type(self.REAL_PACKAGE_PATH)
+        new_shapes = shape_by_type(NATIVE_TYPES_E2E_OUTPUT_PATH)
+        # Solo se compara para los DataType presentes en AMBOS (130/wstr,
+        # 131/numeric, 133/dbDate, 16/i1) -- el E2E sintetico no reproduce
+        # cada columna del paquete real, solo los 4 tipos representativos.
+        common_types = set(real_shapes) & set(new_shapes)
+        self.assertEqual(common_types, {"130", "131", "133", "16"})
+        for dt in common_types:
+            self.assertEqual(
+                real_shapes[dt], new_shapes[dt],
+                f"forma de atributos distinta para DataType={dt}",
+            )
+
+
+class I2I4PropagationTests(unittest.TestCase):
+    """i2 (SMALLINT, DataType=18) / i4 (INTEGER, DataType=3) -- OPCION A de
+    la auditoria de PromocionesNativeDelimitedV1. A diferencia de
+    dbDate/numeric/i1, NO hay evidencia de un paquete real con estos tipos
+    en un Flat File Destination -- los codigos son los ESTANDAR de
+    plataforma SSIS. Estos tests verifican que la propagacion por las 5
+    capas (outputColumn/externalMetadataColumn del Teradata Source,
+    FlatFileColumn, inputColumn/externalMetadataColumn del Flat File
+    Destination) es estructuralmente correcta; NO demuestran compatibilidad
+    runtime con Teradata -- eso queda para el Gate SSDT."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.spec = _base_spec()
+        cls.spec["data_flow"]["source"]["columns"] += [
+            {"name": "Id_Producto_SMALLINT", "data_type": "i2"},
+            {"name": "Id_Promo_INTEGER", "data_type": "i4"},
+        ]
+        cols = cls.spec["data_flow"]["destination"]["columns"]
+        cols[:0] = [
+            {"source": "Id_Producto_SMALLINT", "target": "Id_Producto_SMALLINT", "target_data_type": "i2"},
+            {"source": "Id_Promo_INTEGER", "target": "Id_Promo_INTEGER", "target_data_type": "i4"},
+        ]
+        assert validate_spec(cls.spec, MEDIOS_DE_PAGO_CONTEXT) == []
+        cls.tmp_dir = tempfile.mkdtemp(prefix="ssis_i2_i4_propagation_")
+        cls.output_path = os.path.join(cls.tmp_dir, "Generated.dtsx")
+        generate(cls.spec, MEDIOS_DE_PAGO_CONTEXT, TEMPLATE_PATH, cls.output_path)
+        cls.ir = ssis_parser.parse_file(cls.output_path)
+        cls.validation = ssis_validator.validate_ir(cls.ir)
+        cls.root = ET.parse(cls.output_path).getroot()
+        cls.NS = {"DTS": "www.microsoft.com/SqlServer/Dts"}
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.tmp_dir, ignore_errors=True)
+
+    def test_validator_has_no_errors(self):
+        self.assertEqual(self.validation["errors"], [])
+
+    def _teradata_source(self):
+        return next(
+            c for c in self.root.iter("component")
+            if c.get("componentClassID") == "Microsoft.SSISTeradataSrc"
+        )
+
+    def test_teradata_source_output_column_types(self):
+        comp = self._teradata_source()
+        out_normal = next(
+            o for o in comp.find("outputs").findall("output") if o.get("isErrorOut") != "true"
+        )
+        cols = {c.get("name"): c for c in out_normal.find("outputColumns").findall("outputColumn")}
+        self.assertEqual(cols["Id_Producto_SMALLINT"].get("dataType"), "i2")
+        self.assertIsNone(cols["Id_Producto_SMALLINT"].get("length"))
+        self.assertEqual(cols["Id_Promo_INTEGER"].get("dataType"), "i4")
+        self.assertIsNone(cols["Id_Promo_INTEGER"].get("length"))
+
+    def test_teradata_source_external_metadata_matches_output_column(self):
+        comp = self._teradata_source()
+        out_normal = next(
+            o for o in comp.find("outputs").findall("output") if o.get("isErrorOut") != "true"
+        )
+        oc = {c.get("name"): c for c in out_normal.find("outputColumns").findall("outputColumn")}
+        emc = {c.get("name"): c for c in out_normal.find("externalMetadataColumns").findall("externalMetadataColumn")}
+        for name in ("Id_Producto_SMALLINT", "Id_Promo_INTEGER"):
+            self.assertEqual(oc[name].get("dataType"), emc[name].get("dataType"))
+            self.assertEqual(oc[name].get("length"), emc[name].get("length"))
+
+    def _flat_file_columns(self):
+        cm = next(
+            cm for cm in self.root.findall("DTS:ConnectionManagers/DTS:ConnectionManager", self.NS)
+            if cm.get("{www.microsoft.com/SqlServer/Dts}CreationName") == "FLATFILE"
+        )
+        inner_cm = cm.find("DTS:ObjectData/DTS:ConnectionManager", self.NS)
+        cols = inner_cm.find("DTS:FlatFileColumns", self.NS).findall("DTS:FlatFileColumn", self.NS)
+        return {c.get("{www.microsoft.com/SqlServer/Dts}ObjectName"): c for c in cols}
+
+    def test_flat_file_column_datatype_18_for_i2(self):
+        cols = self._flat_file_columns()
+        NS = "{www.microsoft.com/SqlServer/Dts}"
+        self.assertEqual(cols["Id_Producto_SMALLINT"].get(f"{NS}DataType"), "18")
+
+    def test_flat_file_column_datatype_3_for_i4(self):
+        cols = self._flat_file_columns()
+        NS = "{www.microsoft.com/SqlServer/Dts}"
+        self.assertEqual(cols["Id_Promo_INTEGER"].get(f"{NS}DataType"), "3")
+
+    def test_i2_i4_have_no_column_width_or_maximum_width(self):
+        cols = self._flat_file_columns()
+        NS = "{www.microsoft.com/SqlServer/Dts}"
+        for name in ("Id_Producto_SMALLINT", "Id_Promo_INTEGER"):
+            self.assertIsNone(cols[name].get(f"{NS}ColumnWidth"))
+            self.assertIsNone(cols[name].get(f"{NS}MaximumWidth"))
+
+    def _flat_file_destination(self):
+        return next(
+            c for c in self.root.iter("component")
+            if c.get("componentClassID") == "Microsoft.FlatFileDestination"
+        )
+
+    def test_destination_input_column_cached_types(self):
+        comp = self._flat_file_destination()
+        input_el = comp.find("inputs/input")
+        in_cols = {c.get("cachedName"): c for c in input_el.find("inputColumns").findall("inputColumn")}
+        self.assertEqual(in_cols["Id_Producto_SMALLINT"].get("cachedDataType"), "i2")
+        self.assertEqual(in_cols["Id_Promo_INTEGER"].get("cachedDataType"), "i4")
+
+    def test_destination_external_metadata_type_i2_becomes_ui2(self):
+        # Correccion puntual confirmada por Gate SSDT real
+        # (Examples/Originals/CRM/PromocionesNativeDelimitedV1.dtsx): SOLO
+        # el externalMetadataColumn del Flat File Destination usa 'ui2'
+        # para columnas i2 -- Teradata Source, inputColumn y
+        # DTS:FlatFileColumn.DataType siguen en 'i2'/18 sin cambios (ver
+        # tests dedicados).
+        comp = self._flat_file_destination()
+        ext_cols = {
+            c.get("name"): c
+            for c in comp.find("inputs/input/externalMetadataColumns").findall("externalMetadataColumn")
+        }
+        self.assertEqual(ext_cols["Id_Producto_SMALLINT"].get("dataType"), "ui2")
+
+    def test_destination_external_metadata_type_i4_unchanged(self):
+        # i4 NO presento esta discrepancia en el Gate real -- permanece
+        # 'i4' en el externalMetadataColumn, sin override.
+        comp = self._flat_file_destination()
+        ext_cols = {
+            c.get("name"): c
+            for c in comp.find("inputs/input/externalMetadataColumns").findall("externalMetadataColumn")
+        }
+        self.assertEqual(ext_cols["Id_Promo_INTEGER"].get("dataType"), "i4")
+
+    def test_teradata_source_i2_unchanged_by_the_override(self):
+        # La correccion esta estrictamente acotada al externalMetadataColumn
+        # del Flat File Destination -- el Teradata Source nunca debe verse
+        # afectado.
+        comp = self._teradata_source()
+        out_normal = next(
+            o for o in comp.find("outputs").findall("output") if o.get("isErrorOut") != "true"
+        )
+        oc = {c.get("name"): c for c in out_normal.find("outputColumns").findall("outputColumn")}
+        self.assertEqual(oc["Id_Producto_SMALLINT"].get("dataType"), "i2")
+        emc = {c.get("name"): c for c in out_normal.find("externalMetadataColumns").findall("externalMetadataColumn")}
+        self.assertEqual(emc["Id_Producto_SMALLINT"].get("dataType"), "i2")
+
+    def test_flat_file_column_datatype_still_18_for_i2_not_19(self):
+        # El override es puramente de 'externalMetadataColumn' (pipeline) --
+        # el codigo fisico DTS:FlatFileColumn.DataType NO cambia (confirmado
+        # en el Gate real: siguio en 18, nunca paso a 19/DT_UI2).
+        cols = self._flat_file_columns()
+        NS = "{www.microsoft.com/SqlServer/Dts}"
+        self.assertEqual(cols["Id_Producto_SMALLINT"].get(f"{NS}DataType"), "18")
+
+    def test_lineage_matches_between_source_and_destination(self):
+        ts = self._teradata_source()
+        out_normal = next(
+            o for o in ts.find("outputs").findall("output") if o.get("isErrorOut") != "true"
+        )
+        oc = {c.get("name"): c for c in out_normal.find("outputColumns").findall("outputColumn")}
+        comp = self._flat_file_destination()
+        in_cols = {
+            c.get("cachedName"): c
+            for c in comp.find("inputs/input/inputColumns").findall("inputColumn")
+        }
+        for name in ("Id_Producto_SMALLINT", "Id_Promo_INTEGER"):
+            self.assertEqual(in_cols[name].get("lineageId"), oc[name].get("lineageId"))
+
+    def test_i2_i4_do_not_affect_existing_str_wstr_columns(self):
+        # Regresion: agregar i2/i4 no debe alterar las columnas str/wstr
+        # existentes en el mismo Data Flow.
+        comp = self._flat_file_destination()
+        ext_cols = {
+            c.get("name"): c
+            for c in comp.find("inputs/input/externalMetadataColumns").findall("externalMetadataColumn")
+        }
+        self.assertEqual(ext_cols["Fec_Proceso_PIC"].get("dataType"), "str")
+        self.assertEqual(ext_cols["Nom_Cliente_PIC"].get("dataType"), "str")
 
 
 if __name__ == "__main__":

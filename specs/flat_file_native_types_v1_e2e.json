@@ -1,0 +1,43 @@
+{
+  "package": {
+    "name": "FlatFileNativeTypesV1_E2E"
+  },
+  "data_flow": {
+    "name": "Tarea Flujo de datos",
+    "source": {
+      "type": "teradata",
+      "name": "Teradata Source",
+      "connection": "cnxTeradata",
+      "sql": "SELECT\n    Nombre_Cliente, Fecha_Alta, Importe_Total, Indicador_Activo\nFROM d_FlatFileNativeTypesV1_E2E",
+      "columns": [
+        {"name": "Nombre_Cliente", "data_type": "wstr", "length": 100},
+        {"name": "Fecha_Alta", "data_type": "dbDate"},
+        {"name": "Importe_Total", "data_type": "numeric", "precision": 15, "scale": 2},
+        {"name": "Indicador_Activo", "data_type": "i1"}
+      ]
+    },
+    "destination": {
+      "type": "flat_file",
+      "name": "Destino de archivo plano",
+      "connection_manager": {
+        "name": "ffcFlatFileNativeTypesV1E2E",
+        "format": "delimited",
+        "code_page": 1252,
+        "locale_id": 11274,
+        "unicode": false,
+        "header_row_delimiter": "CRLF",
+        "text_qualifier": "none",
+        "column_delimiter": ";",
+        "filename": {
+          "literal": "FlatFileNativeTypesV1_E2E.txt"
+        }
+      },
+      "columns": [
+        {"source": "Nombre_Cliente", "target": "Nombre_Cliente", "target_data_type": "wstr", "target_length": 100},
+        {"source": "Fecha_Alta", "target": "Fecha_Alta", "target_data_type": "dbDate"},
+        {"source": "Importe_Total", "target": "Importe_Total", "target_data_type": "numeric", "target_precision": 15, "target_scale": 2},
+        {"source": "Indicador_Activo", "target": "Indicador_Activo", "target_data_type": "i1", "row_terminator": true}
+      ]
+    }
+  }
+}
